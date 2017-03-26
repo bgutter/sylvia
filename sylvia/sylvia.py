@@ -164,7 +164,7 @@ class PhoneticDictionary( object ):
         self.iterate( cb )
         return sorted( list( set( cb.matchingWords ) ) )
 
-    def findPronunciation( self, word ):
+    def findPronunciations( self, word ):
         """
         Return a list of pronunciations for word in dictionary
         """
@@ -181,7 +181,7 @@ class PhoneticDictionary( object ):
         Return list of words which rhyme with this one.
         """
         ret = []
-        for pronunciation in self.findPronunciation( word ):
+        for pronunciation in self.findPronunciations( word ):
             mustEndWith = pronunciation[ [ isVowelSound( x ) for x in pronunciation ].index( True ) : ]
             ret += self.regexSearch( ".* " + " ".join( mustEndWith ) )
         word = sanitizeWord( word )
@@ -192,7 +192,7 @@ class PhoneticDictionary( object ):
         Returns a list of words which have a similar vowel pattern.
         """
         ret = []
-        for pronunciation in self.findPronunciation( word ):
+        for pronunciation in self.findPronunciations( word ):
             vowels = [ p for p in pronunciation if isVowelSound( p ) ]
             ret += self.regexSearch( ".*" + "#*".join( vowels ) + ".*" )
         word = sanitizeWord( word )
@@ -212,7 +212,7 @@ def lookupPronunciation( dictPath, word ):
     """
     Return a list of phonemes for a word. None if not found.
     """
-    return openDictionary( dictPath ).findPronunciation( word )
+    return openDictionary( dictPath ).findPronunciations( word )
 
 if __name__ == "__main__":
 
