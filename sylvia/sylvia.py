@@ -179,13 +179,7 @@ class PhoneticDictionary( object ):
         """
         Return a list of pronunciations for word in dictionary
         """
-        queryWord = sanitizeWord( word )
-        pronunciations = []
-        for word, encodedPronunciations in self.entries.iteritems():
-            for encodedPronunciation in encodedPronunciations:
-                if queryWord == sanitizeWord( word ):
-                    pronunciations.append( encodedPronunciation )
-        return [ decodePronunciation( p ) for p in pronunciations ]
+        return [ decodePronunciation( p ) for p in self.entries.get( sanitizeWord( word ), [] ) ]
 
     def getRhymes( self, word ):
         """
