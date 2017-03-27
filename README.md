@@ -82,6 +82,36 @@ Mosher
 Mosier
 Overexposure
 ```
+
+```bash
+> python -m sylvia --rhyme support
+Laporte
+Rapaport
+Rapoport
+Rappaport
+Rappoport
+Teleport
+```
+
+```bash
+> python -m sylvia --near_rhyme support
+Comport
+Davenport
+Davenport's
+Gulfport
+Gumport
+Kennebunkport
+Laporte
+Rapaport
+Rapoport
+Rappaport
+Rappoport
+Supports
+Teleport
+Teleport's
+Williamsport
+```
+
 ```bash
 > python -m sylvia --vowel_match ivanhoe
 Amyotrophic
