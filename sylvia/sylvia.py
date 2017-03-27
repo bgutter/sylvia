@@ -17,6 +17,15 @@ PHONEME_TABLE = [ "AA", "AE", "AH", "AO", "AW", "AY", "B", "CH", "D", "DH", "EH"
 
 VOWELS = [ "AA", "AE", "AH", "AO", "AW", "AY", "EH", "ER", "EY", "IH", "IY", "OW", "OY", "UH", "UW" ]
 
+def dictListAdd( d, k, v ):
+    """
+    Maintain a dictionary whose values are lists of values.
+    """
+    if k not in d:
+        d[ k ] = [ v ]
+    else:
+        d[ k ].append( v )
+
 def isVowelSound( phonemeString ):
     """
     Is this a vowel phoneme?
@@ -108,47 +117,49 @@ class PhoneticDictionary( object ):
             assert( False )
         elif textPath is not None:
             self.path = textPath
-            self.iterate = self.iter__text
+            self.load__text( textPath )
         else:
             self.path = binPath
-            self.iterate = self.iter__bin
+            self.load__bin( binPath )
 
-    def iter__text( self, callback ):
+    def load__text( self, path ):
         """
-        Iterate over the dictionary using text format
+        Read text format dictionary into memory
         """
-        with open( self.path, "r" ) as fin:
+        self.entries = {}
+        with open( path, "r" ) as fin:
             for line in fin:
                 if line[0:3] == ";;;":
                     continue
                 parts         = [ x for x in re.split( r"\s+", line ) if len( x ) > 0 ]
                 word          = sanitizeWord( parts[0] )
                 pronunciation = encodePronunciation( parts[1:] )
-                callback( word, pronunciation )
+                dictListAdd( self.entries, word, pronunciation )
 
-    def iter__bin( self, callback ):
+    def load__bin( self, path ):
         """
-        Iterate over the dictionary using binary format.
+        Load binary format dictionary into memory
         """
-        with open( self.path, "rb" ) as fin:
+        self.entries = {}
+        with open( path, "rb" ) as fin:
             buf = fin.read()
             lines = buf.split( "\n" )
             for line in lines:
                 if len( line ) == 0:
                     continue
                 word, pronunciation = line.split( " " )
-                callback( word, pronunciation )
+                dictListAdd( self.entries, word, pronunciation )
 
     def saveBin( self ):
         """
         Dump compiled version of dictionary to disk.
         """
-        def cb( word, encodedPronunciation ):
-            cb.fout.write( word + " " + encodedPronunciation + "\n" )
         outPath = self.path + ".sylvia"
-        cb.fout = open( outPath, "wb" )
-        self.iterate( cb )
-        cb.fout.close()
+        with open( outPath, "wb" ) as fout:
+            for word, encodedPronunciations in self.entries.iteritems():
+                for encodedPronunciation in encodedPronunciations:
+                    fout.write( word + " " + encodedPronunciation + "\n" )
+        fout.close()
         return outPath
 
     def regexSearch( self, regexTextUnpreprocessed ):
@@ -156,25 +167,25 @@ class PhoneticDictionary( object ):
         Apply phonetic regex to each entry in the dict, returning
         a list of words.
         """
-        def cb( word, encodedPronunciation ):
-            if cb.regex.match( encodedPronunciation ):
-                cb.matchingWords.append( word )
-        cb.matchingWords = []
-        cb.regex = re.compile( preprocessPhoneticRegex( regexTextUnpreprocessed )  + "$" )
-        self.iterate( cb )
-        return sorted( list( set( cb.matchingWords ) ) )
+        matchingWords = []
+        regex = re.compile( preprocessPhoneticRegex( regexTextUnpreprocessed )  + "$" )
+        for word, encodedPronunciations in self.entries.iteritems():
+            for encodedPronunciation in encodedPronunciations:
+                if regex.match( encodedPronunciation ):
+                    matchingWords.append( word )
+        return sorted( list( set( matchingWords ) ) )
 
     def findPronunciations( self, word ):
         """
         Return a list of pronunciations for word in dictionary
         """
-        def cb( word, encodedPronunciation ):
-            if cb.word == sanitizeWord( word ):
-                cb.pronunciations.append( encodedPronunciation )
-        cb.word = sanitizeWord( word )
-        cb.pronunciations = []
-        self.iterate( cb )
-        return [ decodePronunciation( p ) for p in cb.pronunciations ]
+        queryWord = sanitizeWord( word )
+        pronunciations = []
+        for word, encodedPronunciations in self.entries.iteritems():
+            for encodedPronunciation in encodedPronunciations:
+                if queryWord == sanitizeWord( word ):
+                    pronunciations.append( encodedPronunciation )
+        return [ decodePronunciation( p ) for p in pronunciations ]
 
     def getRhymes( self, word ):
         """
