@@ -181,14 +181,17 @@ class PhoneticDictionary( object ):
         """
         return [ decodePronunciation( p ) for p in self.entries.get( sanitizeWord( word ), [] ) ]
 
-    def getRhymes( self, word ):
+    def getRhymes( self, word, near=False ):
         """
         Return list of words which rhyme with this one.
         """
         ret = []
         for pronunciation in self.findPronunciations( word ):
             mustEndWith = pronunciation[ [ isVowelSound( x ) for x in pronunciation ].index( True ) : ]
-            ret += self.regexSearch( ".* " + " ".join( mustEndWith ) )
+            if near:
+                ret += self.regexSearch( ".* " + " #*".join( mustEndWith ) + "#*" )
+            else:
+                ret += self.regexSearch( ".* " + " ".join( mustEndWith ) )
         word = sanitizeWord( word )
         return sorted( [ x for x in set( ret ) if x != word ] )
 
