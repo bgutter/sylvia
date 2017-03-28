@@ -20,8 +20,8 @@ if __name__ == "__main__":
     #
     # User doesn't know what he/she is doing
     #
-    if args.lookup and args.regex and args.rhyme:
-        print "Choose only one action: regex, lookup, or rhyme."
+    if len( [ x for x in [ args.regex, args.lookup, args.rhyme, args.near_rhyme, args.vowel_match, args.optimize_dictionary ] if x is not None ] ) != 1:
+        print "Choose only one action."
         exit()
 
     #

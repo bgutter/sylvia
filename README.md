@@ -16,7 +16,7 @@ Consult the Python docs to learn more about Python's regex format: https://docs.
 
 # Examples
 
-Find words starting with zero or more consonant sounds, followed by the "long E" sound (phoneme EY), followed by zero or more consonant sounds, followed by the "ed" sound (the phoneme sequence EH D):
+Find words starting with zero or more consonant sounds, followed by the "long E" sound (phoneme IY), followed by zero or more consonant sounds, followed by the "ed" sound (the phoneme sequence EH D):
 
 ```bash
 > python -m sylvia --regex '#* IY #* EH D'

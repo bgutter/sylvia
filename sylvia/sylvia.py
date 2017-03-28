@@ -40,7 +40,7 @@ def sanitizePhonemeString( phonemeString ):
 
 def encodePhonemeString( phonemeString ):
     """
-    Encode to some character value above 127. This is to keep out encoded values
+    Encode to some character value above 127. This is to keep our encoded values
     outside of the typical ASCII range, and hopefully avoid anyone getting cute with
     the built-in character classes. It's probably a bad, broken, idea, but it seems
     to work fine.
@@ -111,7 +111,7 @@ class PhoneticDictionary( object ):
 
     def __init__( self, textFile=None, binFile=None ):
         """
-        Set up out backend.
+        Read input file
         """
         if textFile is not None:
             self.load__text( textFile )
