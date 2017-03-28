@@ -109,58 +109,50 @@ class PhoneticDictionary( object ):
     Software API for reading and working with dictionary files
     """
 
-    def __init__( self, textPath=None, binPath=None ):
+    def __init__( self, textFile=None, binFile=None ):
         """
         Set up out backend.
         """
-        if textPath == binPath:
-            assert( False )
-        elif textPath is not None:
-            self.path = textPath
-            self.load__text( textPath )
-        else:
-            self.path = binPath
-            self.load__bin( binPath )
+        if textFile is not None:
+            self.load__text( textFile )
+        elif binFile is not None:
+            self.load__bin( binFile )
 
-    def load__text( self, path ):
+    def load__text( self, fin ):
         """
         Read text format dictionary into memory
         """
         self.entries = {}
-        with open( path, "r" ) as fin:
-            for line in fin:
-                if line[0:3] == ";;;":
-                    continue
-                parts         = [ x for x in re.split( r"\s+", line ) if len( x ) > 0 ]
-                word          = sanitizeWord( parts[0] )
-                pronunciation = encodePronunciation( parts[1:] )
-                dictListAdd( self.entries, word, pronunciation )
+        for line in fin:
+            if line[0:3] == ";;;":
+                continue
+            parts         = [ x for x in re.split( r"\s+", line ) if len( x ) > 0 ]
+            word          = sanitizeWord( parts[0] )
+            pronunciation = encodePronunciation( parts[1:] )
+            dictListAdd( self.entries, word, pronunciation )
 
-    def load__bin( self, path ):
+    def load__bin( self, fin ):
         """
         Load binary format dictionary into memory
         """
         self.entries = {}
-        with open( path, "rb" ) as fin:
-            buf = fin.read()
-            lines = buf.split( "\n" )
-            for line in lines:
-                if len( line ) == 0:
-                    continue
-                word, pronunciation = line.split( " " )
-                dictListAdd( self.entries, word, pronunciation )
+        buf = fin.read()
+        lines = buf.split( "\n" )
+        for line in lines:
+            if len( line ) == 0:
+                continue
+            word, pronunciation = line.split( " " )
+            dictListAdd( self.entries, word, pronunciation )
 
-    def saveBin( self ):
+    def saveBin( self, outPath ):
         """
         Dump compiled version of dictionary to disk.
         """
-        outPath = self.path + ".sylvia"
         with open( outPath, "wb" ) as fout:
             for word, encodedPronunciations in self.entries.iteritems():
                 for encodedPronunciation in encodedPronunciations:
                     fout.write( word + " " + encodedPronunciation + "\n" )
         fout.close()
-        return outPath
 
     def regexSearch( self, regexTextUnpreprocessed ):
         """
@@ -205,19 +197,3 @@ class PhoneticDictionary( object ):
             ret += self.regexSearch( ".*" + "#*".join( vowels ) + ".*" )
         word = sanitizeWord( word )
         return sorted( [ x for x in set( ret ) if x != word ] )
-
-def openDictionary( path ):
-    """
-    Determine whether this is a text of binary dictionary, open, and
-    return it.
-    """
-    if os.path.splitext( path )[1].upper() == ".TXT":
-        return PhoneticDictionary( textPath=path )
-    else:
-        return PhoneticDictionary( binPath=path )
-
-def lookupPronunciation( dictPath, word ):
-    """
-    Return a list of phonemes for a word. None if not found.
-    """
-    return openDictionary( dictPath ).findPronunciations( word )

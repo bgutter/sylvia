@@ -1,3 +1,5 @@
+import pkg_resources
+
 from sylvia import *
 
 if __name__ == "__main__":
@@ -11,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument( "-y", "--rhyme", help="Find words which rhyme with input." )
     parser.add_argument( "-n", "--near_rhyme", help="Find words which nearly rhyme with input." )
     parser.add_argument( "-v", "--vowel_match", help="Find words with a matching vowel pattern." )
-    parser.add_argument( "-c", "--optimize_dictionary", action='store_true', help="Compile the dictionary to speed up later queries.")
+    parser.add_argument( "-c", "--optimize_dictionary", help="Compile the dictionary to speed up later queries.")
     parser.add_argument( "-d", "--dictionary_path", help="Point to an alternate dictionary file.")
     args = parser.parse_args()
 
@@ -23,56 +25,58 @@ if __name__ == "__main__":
         exit()
 
     #
-    # Find the dictionary path
+    # Open dictionary
     #
     if args.dictionary_path:
-        dictPath = args.dictionary_path
-    else:
-        if os.path.exists( "./cmudict.txt.sylvia" ):
-            dictPath = "./cmudict.txt.sylvia"
-        elif os.path.exists( "./cmudict.txt" ):
-            dictPath = "./cmudict.txt"
+        if os.path.splitext( args.dictionary_path )[1].upper() == ".TXT":
+            with open( args.dictionary_path, "r" ) as f:
+                pd = PhoneticDictionary( textFile=f )
         else:
-            print "No dictionary path given, cmudict not found in working directory."
-            exit()
+            with open( args.dictionary_path, "rb" ) as f:
+                pd = PhoneticDictionary( binFile=f )
+    else:
+        pd = PhoneticDictionary( binFile=pkg_resources.resource_stream( "sylvia", "cmudict.sylviabin" ) )
 
+    #
+    # Act
+    #
     if args.optimize_dictionary:
         #
         # Compile the text dictionary to out binary format
         #
-        dictPath = PhoneticDictionary( dictPath ).saveBin()
+        pd.saveBin( args.optimize_dictionary )
 
-    if args.regex:
+    elif args.regex:
         #
         # User wants to lookup words whose pronunciations match the given regex
         #
-        for word in openDictionary( dictPath ).regexSearch( args.regex ):
+        for word in pd.regexSearch( args.regex ):
             print word
 
     elif args.lookup:
         #
         # User wants a list of pronunciations for the given word
         #
-        for p in lookupPronunciation( dictPath, args.lookup ):
+        for p in pd.findPronunciations( args.lookup ):
             print " ".join( p )
 
     elif args.rhyme:
         #
         # User wants words which rhyme with input word
         #
-        for word in openDictionary( dictPath ).getRhymes( args.rhyme, near=False ):
+        for word in pd.getRhymes( args.rhyme, near=False ):
             print word
 
     elif args.near_rhyme:
         #
         # User wants words which rhyme with input word
         #
-        for word in openDictionary( dictPath ).getRhymes( args.near_rhyme, near=True ):
+        for word in pd.getRhymes( args.near_rhyme, near=True ):
             print word
 
     elif args.vowel_match:
         #
         # Find words with the same vowel pattern
         #
-        for word in openDictionary( dictPath ).getVowelMatches( args.vowel_match ):
+        for word in pd.getVowelMatches( args.vowel_match ):
             print word

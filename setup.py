@@ -11,4 +11,5 @@ setup(
   download_url = 'https://github.com/bgutter/sylvia/archive/0.1.tar.gz',
   keywords = [ 'cmudict', 'phoneme', 'phonetic', 'rhyme', 'regex' ],
   classifiers = [],
+  package_data={'': ['cmudict.sylviabin']}
 )
