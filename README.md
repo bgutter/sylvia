@@ -2,6 +2,12 @@
 
 Search pronunciations in the CMU Pronouncing Dictionary using a reglular-expression like syntax. Input-format regular expressions are lightly preprocessed into Python-format regular expressions, and then mapped over an encoded version of cmudict.
 
+## Installation
+
+`pip install sylvia`
+
+## Usage
+
 Sylvia's query format is nearly identical to traditional regular expressions, with the exception that it is intended not to match against patterns of characters, but rather patterns of phonemes. To construct a regular expression query for Sylvia, remember the following rules:
 
 1. Whitespace must be used to delimit consecutive phoneme literals. It may also be used anywhere else in the regular expression, as whitespace is meaningless in the context of a phoneme sequence, and will be stripped during preprocessing.
@@ -14,7 +20,7 @@ Consult the cmudict documentation to learn more about the phoneme set: http://ww
 
 Consult the Python docs to learn more about Python's regex format: https://docs.python.org/2/library/re.html
 
-# Examples
+## Examples
 
 Find words starting with zero or more consonant sounds, followed by the "long E" sound (phoneme IY), followed by zero or more consonant sounds, followed by the "ed" sound (the phoneme sequence EH D):
 
