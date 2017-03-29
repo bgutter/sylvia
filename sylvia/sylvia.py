@@ -11,11 +11,70 @@ import re
 import argparse
 import os
 
-PHONEME_TABLE = [ "AA", "AE", "AH", "AO", "AW", "AY", "B", "CH", "D", "DH", "EH", "ER", "EY", "F", "G",
-                  "HH", "IH", "IY", "JH", "K", "L", "M", "N", "NG", "OW", "OY", "P", "R", "S", "SH", "T",
-                  "TH", "UH", "UW", "V", "W", "Y", "Z", "ZH" ]
+PHONEME_DETAILS__by_text = {}
+PHONEME_DETAILS__by_encoded = {}
+class PhonemeDetails( object ):
+    EUPHONIOUS   = "e"
+    CACOPHONIOUS = "c"
+    encodedIndex = 0
+    def __init__( self, text, isVowel, example, euphony ):
+        self.text    = text
+        self.index   = PhonemeDetails.encodedIndex
+        self.isVowel = isVowel
+        self.example = example
+        self.euphony = euphony
+        self.encodedValue = chr( 128 + self.index )
+        PhonemeDetails.encodedIndex += 1
+        PHONEME_DETAILS__by_text[ text ] = self
+        PHONEME_DETAILS__by_encoded[ self.encodedValue ] = self
+    def isVowelSound( self ):
+        return self.isVowel
+    def encoded( self ):
+        return self.encodedValue
+    def decoded( self ):
+        return self.text
+    def isEuphonious( self ):
+        return self.euphony == PhonemeDetails.EUPHONIOUS
 
-VOWELS = [ "AA", "AE", "AH", "AO", "AW", "AY", "EH", "ER", "EY", "IH", "IY", "OW", "OY", "UH", "UW" ]
+PhonemeDetails( "AA", True,  "o in odd",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "AE", True,  "a in at",       PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "AH", True,  "u in hut",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "AO", True,  "ou in ought",   PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "AW", True,  "ow in cow",     PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "AY", True,  "i in hide",     PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "B",  False, "b in bee",      PhonemeDetails.CACOPHONIOUS )
+PhonemeDetails( "CH", False, "ch in cheese",  PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "D",  False, "d in dog",      PhonemeDetails.CACOPHONIOUS )
+PhonemeDetails( "DH", False, "th in thee",    PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "EH", True,  "e in red",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "ER", True,  "ur in hurt",    PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "EY", True,  "a in ate",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "F",  False, "f in fee",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "G",  False, "g in green",    PhonemeDetails.CACOPHONIOUS )
+PhonemeDetails( "HH", False, "h in he",       PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "IH", True,  "i in it",       PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "IY", True,  "ee in feet",    PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "JH", False, "j in jay",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "K",  False, "k in key",      PhonemeDetails.CACOPHONIOUS )
+PhonemeDetails( "L",  False, "l in law",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "M",  False, "m in me",       PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "N",  False, "n in now",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "NG", False, "ng in ring",    PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "OW", True,  "o in wrote",    PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "OY", True,  "oy in toy",     PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "P",  False, "p in press",    PhonemeDetails.CACOPHONIOUS )
+PhonemeDetails( "R",  False, "r in rat",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "S",  False, "s in sea",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "SH", False, "sh in shell",   PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "T",  False, "t in tea",      PhonemeDetails.CACOPHONIOUS )
+PhonemeDetails( "TH", False, "th wrath",      PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "UH", True,  "oo in hood",    PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "UW", True,  "oo in toot",    PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "V",  False, "v in victory",  PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "W",  False, "w in what",     PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "Y",  False, "y in year",     PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "Z",  False, "z in zero",     PhonemeDetails.EUPHONIOUS   )
+PhonemeDetails( "ZH", False, "z in seizure",  PhonemeDetails.EUPHONIOUS    )
 
 def dictListAdd( d, k, v ):
     """
@@ -30,7 +89,7 @@ def isVowelSound( phonemeString ):
     """
     Is this a vowel phoneme?
     """
-    return phonemeString in VOWELS
+    return PHONEME_DETAILS__by_text[ phonemeString ].isVowelSound()
 
 def sanitizePhonemeString( phonemeString ):
     """
@@ -45,13 +104,13 @@ def encodePhonemeString( phonemeString ):
     the built-in character classes. It's probably a bad, broken, idea, but it seems
     to work fine.
     """
-    return chr( 128 + PHONEME_TABLE.index( sanitizePhonemeString( phonemeString ) ) )
+    return PHONEME_DETAILS__by_text[ sanitizePhonemeString( phonemeString ) ].encoded()
 
 def decodePhonemeByte( phonemeByte ):
     """
     Returns the string for this byte.
     """
-    return sanitizePhonemeString( PHONEME_TABLE[ ord( phonemeByte ) - 128 ] )
+    return PHONEME_DETAILS__by_encoded[ phonemeByte ].decoded()
 
 def encodePronunciation( pronunciationTokens ):
     """
@@ -76,8 +135,8 @@ def sanitizeWord( word ):
         word = needStrip.group( 1 )
     return word.capitalize()
 
-ANY_VOWEL_SOUND_REGEX_TEXT     = "(?:" + "|".join( [ encodePhonemeString( x ) for x in VOWELS ] ) + ")"
-ANY_CONSONANT_SOUND_REGEX_TEXT = "(?:" + "|".join( [ encodePhonemeString( x ) for x in PHONEME_TABLE if x not in VOWELS ] ) + ")"
+ANY_VOWEL_SOUND_REGEX_TEXT     = "(?:" + "|".join( [ x.encoded() for x in PHONEME_DETAILS__by_text.values() if x.isVowelSound() ] ) + ")"
+ANY_CONSONANT_SOUND_REGEX_TEXT = "(?:" + "|".join( [ x.encoded() for x in PHONEME_DETAILS__by_text.values() if not x.isVowelSound() ] ) + ")"
 ANY_SYLLABLE_REGEX_TEXT        = "(?:" + ANY_CONSONANT_SOUND_REGEX_TEXT + "*" + ANY_VOWEL_SOUND_REGEX_TEXT + ANY_CONSONANT_SOUND_REGEX_TEXT + "*)"
 
 def preprocessPhoneticRegex( regexTextUnpreprocessed ):
@@ -98,7 +157,7 @@ def preprocessPhoneticRegex( regexTextUnpreprocessed ):
             encodedTokens.append( ANY_SYLLABLE_REGEX_TEXT )
             continue
         tryPhoneme = sanitizePhonemeString( token )
-        if tryPhoneme in PHONEME_TABLE:
+        if tryPhoneme in PHONEME_DETAILS__by_text.keys():
             encodedTokens.append( encodePhonemeString( tryPhoneme ) )
             continue
         encodedTokens.append( token.replace( " ", "" ) )
@@ -197,3 +256,36 @@ class PhoneticDictionary( object ):
             ret += self.regexSearch( ".*" + "#*".join( vowels ) + ".*" )
         word = sanitizeWord( word )
         return sorted( [ x for x in set( ret ) if x != word ] )
+
+class Poem( object ):
+    """
+    Wraps and analyzes plain text.
+    """
+
+    def __init__( self, dictionary, sourceText ):
+        """
+        Create a new Poem from a string.
+        """
+        self.sourceText = sourceText
+        self.pd = dictionary
+
+    def phonaestheticMap( self ):
+        """
+        EXPERIMENTAL
+        Prints X for cacophonious sounds, ~ for euphonous sounds, and all
+        other whitespace or symbols are retained in-place.
+        """
+        tokensOut = []
+        for token in re.split( "([^a-zA-Z'])", self.sourceText ):
+            pronunciations = self.pd.findPronunciations( token )
+            if len( pronunciations ) > 0:
+                # TODO: Using first for now
+                pronunciation = pronunciations[0]
+                for phoneme in pronunciation:
+                    if PHONEME_DETAILS__by_text[ phoneme ].isEuphonious():
+                        tokensOut.append( "~" )
+                    else:
+                        tokensOut.append( "X" )
+            else:
+                tokensOut.append( token )
+        return "".join( tokensOut )
