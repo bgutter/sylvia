@@ -168,40 +168,69 @@ class PhoneticDictionary( object ):
     Software API for reading and working with dictionary files
     """
 
-    def __init__( self, textFile=None, binFile=None ):
+    def __init__( self, textFile=None, binFile=None, wordPopFile=None ):
         """
         Read input file
         """
-        if textFile is not None:
-            self.load__text( textFile )
+        if textFile is not None and wordPopFile is not None:
+            self.load__text( textFile, wordPopFile )
         elif binFile is not None:
             self.load__bin( binFile )
+        else:
+            #
+            # Need either a text phonetic dict and a text popularity map, OR a single bin file
+            #
+            assert( False )
 
-    def load__text( self, fin ):
+    def load__text( self, finPhonetic, finPop ):
         """
         Read text format dictionary into memory
         """
+        wsre = re.compile( r"\s+" )
+
         self.entries = {}
-        for line in fin:
+        self.popularities = {}
+
+        #
+        # Get pronunciations. May be multiple per word
+        #
+        for line in finPhonetic:
             if line[0:3] == ";;;":
                 continue
-            parts         = [ x for x in re.split( r"\s+", line ) if len( x ) > 0 ]
+            parts         = [ x for x in wsre.split( line ) if len( x ) > 0 ]
             word          = sanitizeWord( parts[0] )
             pronunciation = encodePronunciation( parts[1:] )
             dictListAdd( self.entries, word, pronunciation )
+
+        #
+        # Get popularities. One for each unique word.
+        #
+        for line in finPop:
+            parts = [ x for x in wsre.split( line ) if len( x ) > 0 ]
+            word = sanitizeWord( parts[0] )
+            self.popularities[ word ] = int( parts[ 1 ] )
 
     def load__bin( self, fin ):
         """
         Load binary format dictionary into memory
         """
         self.entries = {}
+        self.popularities = {}
         buf = fin.read()
         lines = buf.split( "\n" )
         for line in lines:
             if len( line ) == 0:
                 continue
-            word, pronunciation = line.split( " " )
+            word, popularity, pronunciation = line.split( " " )
+            self.popularities[ word ] = int( popularity )
             dictListAdd( self.entries, word, pronunciation )
+
+    def sortWordsByPopularity( self, words ):
+        """
+        Return a closure which sorts words based on their popularity
+        as the key function to sorted()
+        """
+        return sorted( words, key=lambda x: -self.findPopularity( x ) )
 
     def saveBin( self, outPath ):
         """
@@ -210,7 +239,8 @@ class PhoneticDictionary( object ):
         with open( outPath, "wb" ) as fout:
             for word, encodedPronunciations in self.entries.iteritems():
                 for encodedPronunciation in encodedPronunciations:
-                    fout.write( word + " " + encodedPronunciation + "\n" )
+                    # TODO: We actially shouldn't save popularity per-pronunciation, since it's keyed on text. Waste of space.
+                    fout.write( word + " " + str( self.findPopularity( word ) ) + " " + encodedPronunciation + "\n" )
         fout.close()
 
     def regexSearch( self, regexTextUnpreprocessed ):
@@ -224,13 +254,19 @@ class PhoneticDictionary( object ):
             for encodedPronunciation in encodedPronunciations:
                 if regex.match( encodedPronunciation ):
                     matchingWords.append( word )
-        return sorted( list( set( matchingWords ) ) )
+        return self.sortWordsByPopularity( list( set( matchingWords ) ) )
 
     def findPronunciations( self, word ):
         """
         Return a list of pronunciations for word in dictionary
         """
         return [ decodePronunciation( p ) for p in self.entries.get( sanitizeWord( word ), [] ) ]
+
+    def findPopularity( self, word ):
+        """
+        Spit out the popularity for given word.
+        """
+        return self.popularities.get( sanitizeWord( word ), -1 )
 
     def getRhymes( self, word, near=False ):
         """
@@ -244,7 +280,7 @@ class PhoneticDictionary( object ):
             else:
                 ret += self.regexSearch( ".* " + " ".join( mustEndWith ) )
         word = sanitizeWord( word )
-        return sorted( [ x for x in set( ret ) if x != word ] )
+        return self.sortWordsByPopularity( [ x for x in set( ret ) if x != word ] )
 
     def getVowelMatches( self, word ):
         """
@@ -255,7 +291,7 @@ class PhoneticDictionary( object ):
             vowels = [ p for p in pronunciation if isVowelSound( p ) ]
             ret += self.regexSearch( ".*" + "#*".join( vowels ) + ".*" )
         word = sanitizeWord( word )
-        return sorted( [ x for x in set( ret ) if x != word ] )
+        return self.sortWordsByPopularity( [ x for x in set( ret ) if x != word ] )
 
 class Poem( object ):
     """

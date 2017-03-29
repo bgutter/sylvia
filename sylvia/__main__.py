@@ -10,19 +10,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument( "-r", "--regex", help="The phonetic regex to use." )
     parser.add_argument( "-l", "--lookup", help="Look up the pronunciation of a word." )
+    parser.add_argument( "-p", "--popularity", help="Look up the popularity of a word." )
     parser.add_argument( "-y", "--rhyme", help="Find words which rhyme with input." )
     parser.add_argument( "-n", "--near_rhyme", help="Find words which nearly rhyme with input." )
     parser.add_argument( "-v", "--vowel_match", help="Find words with a matching vowel pattern." )
     parser.add_argument( "-e", "--phonaesthetic_map", help="Print a map of euphonious vs cacophonious sounds from a text file." )
     parser.add_argument( "-c", "--optimize_dictionary", help="Compile the dictionary to speed up later queries.")
     parser.add_argument( "-d", "--dictionary_path", help="Point to an alternate dictionary file.")
+    parser.add_argument( "-w", "--popularity_path", help="Point to an alternate popularity file.")
     args = parser.parse_args()
 
     #
     # User doesn't know what he/she is doing
     #
-    if len( [ x for x in [ args.regex, args.lookup, args.rhyme, args.near_rhyme, args.vowel_match, args.phonaesthetic_map, args.optimize_dictionary ] if x is not None ] ) != 1:
+    actionCount = len( [ x for x in [ args.regex, args.lookup, args.popularity, args.rhyme, args.near_rhyme, args.vowel_match, args.phonaesthetic_map, args.optimize_dictionary ] if x is not None ] )
+    if actionCount > 1:
         print "Choose only one action."
+        exit()
+    if actionCount < 1:
+        print "Nothing to do."
         exit()
 
     #
@@ -30,8 +36,13 @@ if __name__ == "__main__":
     #
     if args.dictionary_path:
         if os.path.splitext( args.dictionary_path )[1].upper() == ".TXT":
-            with open( args.dictionary_path, "r" ) as f:
-                pd = PhoneticDictionary( textFile=f )
+            # Also look for popularity file
+            if not args.popularity_path:
+                print "If using a text dictionary file, a popularity file is also needed."
+                exit()
+            with open( args.dictionary_path, "r" ) as f1:
+                with open( args.popularity_path, "r" ) as f2:
+                    pd = PhoneticDictionary( textFile=f1, wordPopFile=f2 )
         else:
             with open( args.dictionary_path, "rb" ) as f:
                 pd = PhoneticDictionary( binFile=f )
@@ -60,6 +71,12 @@ if __name__ == "__main__":
         #
         for p in pd.findPronunciations( args.lookup ):
             print " ".join( p )
+
+    elif args.popularity:
+        #
+        # User wants popularity score for word
+        #
+        print pd.findPopularity( args.popularity )
 
     elif args.rhyme:
         #
