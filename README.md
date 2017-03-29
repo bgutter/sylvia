@@ -1,6 +1,6 @@
 # Sylvia
 
-Search pronunciations in the CMU Pronouncing Dictionary using a reglular-expression like syntax. Input-format regular expressions are lightly preprocessed into Python-format regular expressions, and then mapped over an encoded version of cmudict.
+Search pronunciations in the CMU Pronouncing Dictionary using a reglular-expression like syntax. Input-format regular expressions are lightly preprocessed into Python-format regular expressions, and then mapped over an encoded version of cmudict. Results are sorted by popularity using Peter Norvig's list of word popularities derived from Google's N-Gram dataset.
 
 ## Installation
 
@@ -16,9 +16,11 @@ Sylvia's query format is nearly identical to traditional regular expressions, wi
 1. `%` is a shortcut for "any syllable", and is equivalant to `#*@#*`
 1. Otherwise, whatever flies with Python's regular expression format will work in Sylvia. Just use some common sense, as some things (such as character classes) will be wholly inapplicable to searches in phoneme-space.
 
-Consult the cmudict documentation to learn more about the phoneme set: http://www.speech.cs.cmu.edu/cgi-bin/cmudict 
+Consult the cmudict documentation to learn more about the phoneme set, or phonetic dictionary file format: http://www.speech.cs.cmu.edu/cgi-bin/cmudict 
 
 Consult the Python docs to learn more about Python's regex format: https://docs.python.org/2/library/re.html
+
+If curious, read more about the popularity file format, and the data source used for Sylvia's default word popularities: http://norvig.com/ngrams/
 
 ## Examples
 
@@ -166,6 +168,8 @@ Zydeco
 ```
 Not yet available in PyPI releases:
 
+Analyze the phonaestetic patterns in a poem or song (naively). An "X" denotes an explosive consonant phoneme, while a "~" is used for all other phonemes.
+
 ```bash
 > cat test.txt
 A smooth, flowing line
@@ -174,4 +178,12 @@ Crack! Bang! Obnoxious sounds
 > python -m sylvia --phonaesthetic_map ./test.txt 
 ~ ~~~~, ~~~~~ ~~~
 X~~X! X~~! ~X~~X~~~ ~~~X~
+```
+Look up the popularity of a word. The actual value will depend on the nature of the given popularity text file, and should not be relied on for any particular meaning. However, a larger popularity value will be taken to mean that the word is more popular.
+
+```bash
+> python -m sylvia --popularity I
+3086225277
+> python -m sylvia --popularity coolidge
+704774
 ```
