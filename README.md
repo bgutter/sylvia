@@ -72,7 +72,7 @@ T AH M EY T OW
 T AH M AA T OW
 ```
 
-# Experimental Features
+## Experimental Features
 
 ```bash
 > python -m sylvia --rhyme closure
@@ -163,4 +163,15 @@ Titleholder
 Virazole
 Xylophone
 Zydeco
+```
+Not yet available in PyPI releases:
+
+```bash
+> cat test.txt
+A smooth, flowing line
+Crack! Bang! Obnoxious sounds
+
+> python -m sylvia --phonaesthetic_map ./test.txt 
+~ ~~~~, ~~~~~ ~~~
+X~~X! X~~! ~X~~X~~~ ~~~X~
 ```
