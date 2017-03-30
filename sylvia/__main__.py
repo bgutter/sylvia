@@ -10,6 +10,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument( "-r", "--regex", help="The phonetic regex to use." )
     parser.add_argument( "-l", "--lookup", help="Look up the pronunciation of a word." )
+    parser.add_argument( "-i", "--infer_pronunciation", help="Generate a guess pronunciation based on some rules." )
     parser.add_argument( "-p", "--popularity", help="Look up the popularity of a word." )
     parser.add_argument( "-y", "--rhyme", help="Find words which rhyme with input." )
     parser.add_argument( "-n", "--near_rhyme", help="Find words which nearly rhyme with input." )
@@ -23,7 +24,7 @@ if __name__ == "__main__":
     #
     # User doesn't know what he/she is doing
     #
-    actionCount = len( [ x for x in [ args.regex, args.lookup, args.popularity, args.rhyme, args.near_rhyme, args.vowel_match, args.phonaesthetic_map, args.optimize_dictionary ] if x is not None ] )
+    actionCount = len( [ x for x in [ args.regex, args.lookup, args.infer_pronunciation, args.popularity, args.rhyme, args.near_rhyme, args.vowel_match, args.phonaesthetic_map, args.optimize_dictionary ] if x is not None ] )
     if actionCount > 1:
         print "Choose only one action."
         exit()
@@ -71,6 +72,12 @@ if __name__ == "__main__":
         #
         for p in pd.findPronunciations( args.lookup ):
             print " ".join( p )
+
+    elif args.infer_pronunciation:
+        #
+        # User wants to see what a pronunciation guess looks like
+        #
+        print " ".join( pd.inferPronunciation( args.infer_pronunciation ) )
 
     elif args.popularity:
         #

@@ -76,6 +76,11 @@ PhonemeDetails( "Y",  False, "y in year",     PhonemeDetails.EUPHONIOUS   )
 PhonemeDetails( "Z",  False, "z in zero",     PhonemeDetails.EUPHONIOUS   )
 PhonemeDetails( "ZH", False, "z in seizure",  PhonemeDetails.EUPHONIOUS    )
 
+VOWEL_LETTERS     = [ "a", "e", "i", "o", "u" ]
+CONSONANT_LETTERS = [ chr( i ) for i in range( ord( 'a' ), ord( 'z' ) + 1 ) if chr( i ) not in VOWEL_LETTERS ]
+
+CONSONANT_LETTER_REGEX = "|".join( CONSONANT_LETTERS )
+
 def dictListAdd( d, k, v ):
     """
     Maintain a dictionary whose values are lists of values.
@@ -225,6 +230,98 @@ class PhoneticDictionary( object ):
             self.popularities[ word ] = int( popularity )
             dictListAdd( self.entries, word, pronunciation )
 
+    def _inferPronunciationPartial( self, word, startChar, endChar ):
+        """
+        Infer the pronunciation for this portion of the word.
+        """
+        #print word, startChar, endChar
+        #raw_input()
+
+        def recurse( theseResults, splitStart, splitEnd ):
+            if splitStart == startChar:
+                if splitEnd == endChar:
+                    # base case
+                    return theseResults
+                return theseResults + self._inferPronunciationPartial( word, splitEnd, endChar )
+            return self._inferPronunciationPartial( word, startChar, splitStart ) + theseResults + self._inferPronunciationPartial( word, splitEnd, endChar )
+
+        texts = {}
+        patterns__tier1 = [
+            [ "a$", [ "AH" ] ],
+            [ "a(" + CONSONANT_LETTER_REGEX + ")e$", [ "EY" ] ],
+            [ "eese$", [ "IY", "Z" ] ],
+            [ "ee(" + CONSONANT_LETTER_REGEX + ")e$", [ "IY" ] ],
+            [ "e(" + CONSONANT_LETTER_REGEX + ")e$", [ "IY" ] ],
+            [ "ay$", [ "EY" ] ],
+            [ "y$", [ "IY" ] ],
+            [ "ie$", [ "IY" ] ],
+            [ "oo", [ "UW" ] ], # TODO: Use ML techniques with dictionary to choose between UW and UH phonemes
+            [ "ee", [ "IY" ] ],
+            [ "ey", [ "EY" ] ],
+            [ "th", [ "DH" ] ],
+            [ "wh", [ "W" ] ],
+            [ "or", [ "AO", "R" ] ],
+            [ "ou", [ "OW" ] ], # TODO: OW vs UW
+            [ "sh", [ "SH" ] ],
+            [ "ch", [ "CH" ] ],
+            [ "oa", [ "OW" ] ],
+            [ "ck", [ "K" ] ],
+            [ "c",  [ "K"  ] ],
+            [ "kn", [ "N" ] ],
+            [ "k",  [ "K"  ] ],
+            [ "ll", [ "L" ] ],
+            [ "l",  [ "L"  ] ],
+            [ "ng", [ "NG" ] ],
+            [ "ais", [ "EY", "Z" ] ],
+            [ "ai", [ "EY" ] ],
+            [ "b",  [ "B"  ] ],
+            [ "d",  [ "D"  ] ],
+            [ "f",  [ "F"  ] ],
+            [ "gh", [ "F"  ] ],
+            [ "ph", [ "F"  ] ],
+            [ "au", [ "AO" ] ], # TODO: Use ML techniques with dictionary to choose between AA and AW and AO
+            [ "j",  [ "JH" ] ],
+            [ "gg", [ "G" ] ],
+            [ "ss", [ "S" ] ],
+            [ "i",  [ "IH" ] ],
+            [ "ow", [ "AW" ] ],
+            [ "y",  [ "Y" ] ],
+            [ "r",  [ "R" ] ],
+            [ "er", [ "ER" ] ],
+            [ "w",  [ "W" ] ],
+            [ "m",  [ "M" ] ],
+            [ "n",  [ "N" ] ],
+            [ "s",  [ "S" ] ],
+            [ "t",  [ "T" ] ],
+            [ "u",  [ "AH" ] ],
+            [ "a",  [ "AE" ] ],
+            [ "p",  [ "P" ] ],
+            [ "o",  [ "AA" ] ],
+            [ "e",  [ "EH" ] ],
+            [ "z", [ "Z" ] ],
+            [ "^x", [ "Z" ] ],
+            [ "x", [ "K S" ] ],
+            [ "g", [ "G" ] ],
+            [ "v", [ "V" ] ],
+            ]
+        for p in patterns__tier1:
+            f = p[0]
+            p[ 0 ] = re.compile( p[0] )
+            texts[ p[0] ] = f
+
+        for p, v in patterns__tier1:
+            m = p.search( word, startChar, endChar )
+            if m is not None:
+                print "{}: matched {} from {} to {}".format( word, texts[ p ], m.start(), m.end() )
+                if p.groups > 0:
+                    v = v + self._inferPronunciationPartial( word, m.start( 1 ), m.end( 1 ) )
+                return recurse( v, m.start(), m.end() )
+
+        if startChar == endChar:
+            # wtf?
+            return []
+        return [ "."]
+
     def sortWordsByPopularity( self, words ):
         """
         Return a closure which sorts words based on their popularity
@@ -292,6 +389,13 @@ class PhoneticDictionary( object ):
             ret += self.regexSearch( ".*" + "#*".join( vowels ) + ".*" )
         word = sanitizeWord( word )
         return self.sortWordsByPopularity( [ x for x in set( ret ) if x != word ] )
+
+    def inferPronunciation( self, word ):
+        """
+        Generate a guess at the pronunciation for this word.
+        Can be used as a stopgap for words not in the dictioanry.
+        """
+        return self._inferPronunciationPartial( word.lower(), 0, len( word ) )
 
 class Poem( object ):
     """
