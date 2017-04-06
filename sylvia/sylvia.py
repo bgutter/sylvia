@@ -255,7 +255,7 @@ class PhoneticDictionary( object ):
         """
         if len( word ) == 0:
             return []
-        if len( word ) >= 2 and word[-1] == 's' and word[-2] != 's':
+        if len( word ) >= 2 and word[-1] == 's' and word[-2] != 's' and word[-2] in CONSONANT_LETTERS:
             return self._inferPronunciationPartial( word[:-1], 0, len( word ) - 1 ) + [ "Z" if word[-2] is not 't' else "S" ]
 
         pi = PronunciationInferencer()
@@ -264,7 +264,6 @@ class PhoneticDictionary( object ):
         # Single letter defaults ensure we always have
         # Some guess at a pronunciation
         #
-        pi.addRule( PronunciationRule( sequence="y", phonemes=[ "IY" ], alignEnd=True ) )
         singleLetterDefaults = { 'a': 'AE', 'b': 'B', 'c': 'K', 'd': 'D', 'e': 'EH', 'f': 'F', 'g': 'G', 'h': 'HH', 'i': 'IH', 'j': 'JH', 'k': 'K',
                                  'l': 'L', 'm': 'M', 'n': 'N', 'o': 'AA', 'p': 'P', 'q': 'K', 'r': 'R', 's': 'S', 't': 'T', 'u': 'AH', 'v': 'V',
                                  'w': 'W', 'x': [ 'K', 'S' ], 'y': 'Y', 'z': 'Z' }
@@ -272,8 +271,7 @@ class PhoneticDictionary( object ):
             if p.__class__ != list:
                 p = [ p ]
             pi.addRule( PronunciationRule( sequence=l, phonemes=p, priority=0 ) )
-
-        pi.addRule( PronunciationRule( sequence="ed", phonemes=[ "D" ], alignEnd=True ) )
+        pi.addRule( PronunciationRule( sequence="y", phonemes=[ "IY" ], alignEnd=True ) )
 
         #
         # Double vowel sounds
@@ -292,7 +290,7 @@ class PhoneticDictionary( object ):
                                   'oi' : "OY", 'oy' : "OY", 'ng' : "NG", 'ie': "IY", 'ay' : "EY",
                                   'ea' : "IY", 'ch' : "CH", "or" : [ "AO", "R" ], "ur" : "ER", "ou" : "AO",
                                   'ign' : [ "AY", "N" ], 'igm' : [ "AY", "M" ], 'qu' : [ "K", "W" ],
-                                  'oa' : "OW" }
+                                  'oa' : "OW", 'ow' : "OW" }
         for l, p in highPrioritySequences.iteritems():
             if p.__class__ != list:
                 p = [ p ]
@@ -313,7 +311,6 @@ class PhoneticDictionary( object ):
         #
         #
         pi.addRule( PronunciationRule( sequence="le", phonemes=[ "AH", "L" ], alignEnd=True ) )
-
 
         #
         # silent e patterns
@@ -344,6 +341,23 @@ class PhoneticDictionary( object ):
                 pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'ing', phonemes=flatten_list( [ vowelSound, consonantSound, 'IH', 'NG' ] ), alignEnd=True ) )
 
         #
+        # ed patterns
+        #
+        pi.addRule( PronunciationRule( sequence="ed", phonemes=[ "T" ], alignEnd=True ) )
+        for leadingVowel, vowelSound in silentELeadingVowels.iteritems():
+            for linkingConsonant, consonantSound in singleLetterDefaults.iteritems():
+                if linkingConsonant in VOWEL_LETTERS:
+                    continue
+                if linkingConsonant in silentELinkingNonDefaultConsonants.keys():
+                    continue
+                if linkingConsonant is "t":
+                    pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'ed', phonemes=flatten_list( [ vowelSound, consonantSound, 'EH', 'D' ] ), alignEnd=True ) )
+                else:
+                    pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'ed', phonemes=flatten_list( [ vowelSound, consonantSound, 'T' ] ), alignEnd=True ) )
+            for linkingConsonant, consonantSound in silentELinkingNonDefaultConsonants.iteritems():
+                pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'ed', phonemes=flatten_list( [ vowelSound, consonantSound, 'T' ] ), alignEnd=True ) )
+
+        #
         # y at end of word after consonants
         #
         for leadingVowel, vowelSound in silentELeadingVowels.iteritems():
@@ -369,7 +383,6 @@ class PhoneticDictionary( object ):
         #
         # le becomes "AH L"
         #
-        
         
 
         #
@@ -407,6 +420,21 @@ class PhoneticDictionary( object ):
         #
         # Phoneme sound type cases bags -- Z vs IH Z
         #
+
+        #
+        # Alternativesx!! Sorted by liklihood
+        #
+        # ML component:
+        #
+        # Look at potential syllabifications
+        # Find those syllables in other words
+        # Vote
+        # ????
+        #
+
+        pi.addRule( PronunciationRule( sequence="ous", phonemes=[ "AH", "S" ], alignEnd=True ) )
+        pi.addRule( PronunciationRule( sequence="a", phonemes=[ "AH" ], alignEnd=True ) )
+
 
         return pi.pronounce( word )
 

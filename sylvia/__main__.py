@@ -77,6 +77,7 @@ if __name__ == "__main__":
         #
         # User wants to see what a pronunciation guess looks like
         #
+        
         fail = 0
         win = 0
         for word, pronunciations in sorted( [ x for x in pd.entries.iteritems() ], key=lambda x: -pd.findPopularity( x[0] ) )[:1000] :
@@ -84,11 +85,11 @@ if __name__ == "__main__":
                 continue
             inferred = pd.inferPronunciation( word )
             if encodePronunciation( inferred ) not in pronunciations:
-                print "FAIL:", word, inferred, [ decodePronunciation( x ) for x in pronunciations ]
+                # print "FAIL:", word, inferred, [ decodePronunciation( x ) for x in pronunciations ]
                 fail += 1
             else:
                 win += 1
-            print fail, win
+        print fail, win
         
         print " ".join( pd.inferPronunciation( args.infer_pronunciation ) )
 
