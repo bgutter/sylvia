@@ -10,6 +10,8 @@ import sys
 import re
 import argparse
 import os
+import itertools
+import code
 
 PHONEME_DETAILS__by_text = {}
 PHONEME_DETAILS__by_encoded = {}
@@ -80,6 +82,7 @@ VOWEL_LETTERS     = [ "a", "e", "i", "o", "u" ]
 CONSONANT_LETTERS = [ chr( i ) for i in range( ord( 'a' ), ord( 'z' ) + 1 ) if chr( i ) not in VOWEL_LETTERS ]
 
 CONSONANT_LETTER_REGEX = "|".join( CONSONANT_LETTERS )
+vOWEL_LETTER_REGEX = "|".join( VOWEL_LETTERS )
 
 def dictListAdd( d, k, v ):
     """
@@ -168,6 +171,13 @@ def preprocessPhoneticRegex( regexTextUnpreprocessed ):
         encodedTokens.append( token.replace( " ", "" ) )
     return "".join( encodedTokens )
 
+def get_all_substrings(input_string):
+    """
+    https://stackoverflow.com/questions/22469997/how-to-get-all-the-contiguous-substrings-of-a-string-in-python
+    """
+    length = len( input_string )
+    return [ input_string[ i : j + 1 ] for i in xrange( length ) for j in xrange( i, length ) ]
+
 class PhoneticDictionary( object ):
     """
     Software API for reading and working with dictionary files
@@ -234,93 +244,128 @@ class PhoneticDictionary( object ):
         """
         Infer the pronunciation for this portion of the word.
         """
-        #print word, startChar, endChar
-        #raw_input()
+        pi = PronunciationInferencer()
 
-        def recurse( theseResults, splitStart, splitEnd ):
-            if splitStart == startChar:
-                if splitEnd == endChar:
-                    # base case
-                    return theseResults
-                return theseResults + self._inferPronunciationPartial( word, splitEnd, endChar )
-            return self._inferPronunciationPartial( word, startChar, splitStart ) + theseResults + self._inferPronunciationPartial( word, splitEnd, endChar )
+        #
+        # Single letter defaults ensure we always have
+        # Some guess at a pronunciation
+        #
+        singleLetterDefaults = { 'a': 'AE', 'b': 'B', 'c': 'K', 'd': 'D', 'e': 'EH', 'f': 'F', 'g': 'G', 'h': 'HH', 'i': 'IH', 'j': 'JH', 'k': 'K',
+                                 'l': 'L', 'm': 'M', 'n': 'N', 'o': 'AA', 'p': 'P', 'q': 'K', 'r': 'R', 's': 'S', 't': 'T', 'u': 'AH', 'v': 'V',
+                                 'w': 'W', 'x': [ 'K', 'S' ], 'y': 'Y', 'z': 'Z' }
+        for l, p in singleLetterDefaults.iteritems():
+            if p.__class__ != list:
+                p = [ p ]
+            pi.addRule( PronunciationRule( sequence=l, phonemes=p, priority=0 ) )
 
-        texts = {}
-        patterns__tier1 = [
-            [ "a$", [ "AH" ] ],
-            [ "a(" + CONSONANT_LETTER_REGEX + ")e$", [ "EY" ] ],
-            [ "eese$", [ "IY", "Z" ] ],
-            [ "ee(" + CONSONANT_LETTER_REGEX + ")e$", [ "IY" ] ],
-            [ "e(" + CONSONANT_LETTER_REGEX + ")e$", [ "IY" ] ],
-            [ "ay$", [ "EY" ] ],
-            [ "y$", [ "IY" ] ],
-            [ "ie$", [ "IY" ] ],
-            [ "oo", [ "UW" ] ], # TODO: Use ML techniques with dictionary to choose between UW and UH phonemes
-            [ "ee", [ "IY" ] ],
-            [ "ey", [ "EY" ] ],
-            [ "th", [ "DH" ] ],
-            [ "wh", [ "W" ] ],
-            [ "or", [ "AO", "R" ] ],
-            [ "ou", [ "OW" ] ], # TODO: OW vs UW
-            [ "sh", [ "SH" ] ],
-            [ "ch", [ "CH" ] ],
-            [ "oa", [ "OW" ] ],
-            [ "ck", [ "K" ] ],
-            [ "c",  [ "K"  ] ],
-            [ "kn", [ "N" ] ],
-            [ "k",  [ "K"  ] ],
-            [ "ll", [ "L" ] ],
-            [ "l",  [ "L"  ] ],
-            [ "ng", [ "NG" ] ],
-            [ "ais", [ "EY", "Z" ] ],
-            [ "ai", [ "EY" ] ],
-            [ "b",  [ "B"  ] ],
-            [ "d",  [ "D"  ] ],
-            [ "f",  [ "F"  ] ],
-            [ "gh", [ "F"  ] ],
-            [ "ph", [ "F"  ] ],
-            [ "au", [ "AO" ] ], # TODO: Use ML techniques with dictionary to choose between AA and AW and AO
-            [ "j",  [ "JH" ] ],
-            [ "gg", [ "G" ] ],
-            [ "ss", [ "S" ] ],
-            [ "i",  [ "IH" ] ],
-            [ "ow", [ "AW" ] ],
-            [ "y",  [ "Y" ] ],
-            [ "r",  [ "R" ] ],
-            [ "er", [ "ER" ] ],
-            [ "w",  [ "W" ] ],
-            [ "m",  [ "M" ] ],
-            [ "n",  [ "N" ] ],
-            [ "s",  [ "S" ] ],
-            [ "t",  [ "T" ] ],
-            [ "u",  [ "AH" ] ],
-            [ "a",  [ "AE" ] ],
-            [ "p",  [ "P" ] ],
-            [ "o",  [ "AA" ] ],
-            [ "e",  [ "EH" ] ],
-            [ "z", [ "Z" ] ],
-            [ "^x", [ "Z" ] ],
-            [ "x", [ "K S" ] ],
-            [ "g", [ "G" ] ],
-            [ "v", [ "V" ] ],
-            ]
-        for p in patterns__tier1:
-            f = p[0]
-            p[ 0 ] = re.compile( p[0] )
-            texts[ p[0] ] = f
+        #
+        # Double consonant sounds
+        #
+        doubleConsonants = { 'b' : 'B', 'c' : 'S', 'd' : 'D', 'f' : 'F', 'g' : 'G', 'j' : 'JH', 'k' : 'K',
+                             'l' : 'L', 'm' : 'M', 'm' : 'N', 'p' : 'P', 'r' : 'R', 's' : 'S', 't' : 'T',
+                             'v' : 'V', 'w' : 'W', 'x' : [ 'K', 'S' ], 'z' : 'ZH' }
+        for l, p in doubleConsonants.iteritems():
+            if p.__class__ != list:
+                p = [ p ]
+            pi.addRule( PronunciationRule( sequence=l+l, phonemes=p, priority=1 ) )
 
-        for p, v in patterns__tier1:
-            m = p.search( word, startChar, endChar )
-            if m is not None:
-                print "{}: matched {} from {} to {}".format( word, texts[ p ], m.start(), m.end() )
-                if p.groups > 0:
-                    v = v + self._inferPronunciationPartial( word, m.start( 1 ), m.end( 1 ) )
-                return recurse( v, m.start(), m.end() )
+        #
+        # Double vowel sounds
+        #
+        doubleVowels = { 'a' : 'AE', 'e' : "IY", 'o' : 'UW' }
+        for l, p in doubleVowels.iteritems():
+            if p.__class__ != list:
+                p = [ p ]
+            pi.addRule( PronunciationRule( sequence=l+l, phonemes=p, priority=1 ) )
 
-        if startChar == endChar:
-            # wtf?
-            return []
-        return [ "."]
+        #
+        # silent e patterns
+        #
+        silentELeadingVowels = { 'a' : 'EY', 'e' : 'IY', 'i' : 'AY', 'o' : 'OW', 'u' : 'UW' }
+        silentELinkingNonDefaultConsonants = { 'c' : 'S', 'g' : 'JH' }
+        for leadingVowel, vowelSound in silentELeadingVowels.iteritems():
+            for linkingConsonant, consonantSound in singleLetterDefaults.iteritems():
+                if linkingConsonant in VOWEL_LETTERS:
+                    continue
+                if linkingConsonant in silentELinkingNonDefaultConsonants.keys():
+                    continue
+                pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'e', phonemes=[ vowelSound, consonantSound ], alignEnd=True ) )
+            for linkingConsonant, consonantSound in silentELinkingNonDefaultConsonants.iteritems():
+                pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'e', phonemes=[ vowelSound, consonantSound ], alignEnd=True ) )
+
+        #
+        # ing patterns
+        #
+        for leadingVowel, vowelSound in silentELeadingVowels.iteritems():
+            for linkingConsonant, consonantSound in singleLetterDefaults.iteritems():
+                if linkingConsonant in VOWEL_LETTERS:
+                    continue
+                if linkingConsonant in silentELinkingNonDefaultConsonants.keys():
+                    continue
+                pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'ing', phonemes=[ vowelSound, consonantSound, 'IH', 'NG' ], alignEnd=True ) )
+            for linkingConsonant, consonantSound in silentELinkingNonDefaultConsonants.iteritems():
+                pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'ing', phonemes=[ vowelSound, consonantSound, 'IH', 'NG' ], alignEnd=True ) )
+
+        #
+        # Other high priority sequences
+        #
+        highPrioritySequences = { 'ck' : "K", 'er' : "ER", 'sh' : "SH", 'ai' : "EY", 'au' : "AO",
+                                  'oi' : "OY", 'oy' : "OY", 'ng' : "NG", 'ie': "IY", 'ay' : "EY",
+                                  'ea' : "IY", 'ch' : "CH" }
+        for l, p in highPrioritySequences.iteritems():
+            if p.__class__ != list:
+                p = [ p ]
+            pi.addRule( PronunciationRule( sequence=l, phonemes=p, priority=3 ) )
+
+        #
+        # y at end of word after consonants
+        #
+        pi.addRule( PronunciationRule( sequence="y", phonemes=[ "IY" ], alignEnd=True ) )
+        for leadingVowel, vowelSound in silentELeadingVowels.iteritems():
+            for linkingConsonant, consonantSound in singleLetterDefaults.iteritems():
+                if linkingConsonant in VOWEL_LETTERS:
+                    continue
+                if linkingConsonant in silentELinkingNonDefaultConsonants.keys():
+                    continue
+                pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'y', phonemes=[ vowelSound, consonantSound, 'IY' ], alignEnd=True ) )
+            for linkingConsonant, consonantSound in silentELinkingNonDefaultConsonants.iteritems():
+                pi.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'y', phonemes=[ vowelSound, consonantSound, 'IY' ], alignEnd=True ) )
+
+        #
+        # o at end of word after consonants
+        #
+
+        #
+        # Ending s (z sound after t) without breaking silent e and ing
+        #
+
+        #
+        # el becomes "AH L"
+        #
+
+        #
+        # Silent gh
+        #
+
+        #
+        # Silent k
+        #
+
+        #
+        # gh and ph as f
+        #
+
+        #
+        # ea in feathers?
+        #
+
+        return pi.pronounce( word )
+
+    def getEntries( self ):
+        """
+        Get a list of all the words in the dictionary.
+        """
+        return self.entries.keys()
 
     def sortWordsByPopularity( self, words ):
         """
@@ -390,12 +435,86 @@ class PhoneticDictionary( object ):
         word = sanitizeWord( word )
         return self.sortWordsByPopularity( [ x for x in set( ret ) if x != word ] )
 
-    def inferPronunciation( self, word ):
+    def inferPronunciation( self, word, method="ruleset" ):
         """
         Generate a guess at the pronunciation for this word.
         Can be used as a stopgap for words not in the dictioanry.
         """
-        return self._inferPronunciationPartial( word.lower(), 0, len( word ) )
+        if method == "ruleset":
+            return self._inferPronunciationPartial( sanitizeWord( word ).lower(), 0, len( word ) )
+        elif method == "ml":
+            # TODO
+            assert( False )
+        return []
+
+class PronunciationRule( object ):
+    def __init__( self, *args, **kwargs ):
+        self.kwargs = kwargs
+        pass
+    def __repr__( self ):
+        return str( [ str( k ) + ": " + str( v ) for k, v in self.kwargs.iteritems() ] )
+    def applyOnce( self, word, startIdx, endIdx ):
+        if 'sequence' in self.kwargs:
+            #
+            # Dumb sequence search
+            #
+            sequence = self.kwargs[ 'sequence' ]
+            if 'alignEnd' in self.kwargs and self.kwargs[ 'alignEnd' ]:
+                if endIdx != len( word ):
+                    return None
+                if word[ -len( sequence ) : ][:: -1 ] == sequence[::-1]:
+                    return ( len( word ) - len( sequence ), len( word ), self.kwargs[ 'phonemes' ] )
+                else:
+                    return None
+            idx = word[ startIdx : endIdx ].find( sequence )
+            if idx >= 0:
+                idx += startIdx
+                return ( idx, idx + len( sequence ), self.kwargs[ 'phonemes' ] )
+            return None
+
+class PronunciationInferencer( object ):
+    """
+    Construct a ruleset for translating character patterns to
+    pronunciations, or find character<->phoneme alignments.
+    """
+
+    def __init__( self ):
+        self.rules = []
+
+    def addRule( self, rule, priorityOver=[] ):
+        self.rules = [ rule ] + self.rules
+
+    def dumpModel( self, path ):
+        """
+        Save model to a file
+        """
+        pass
+
+    def _pronouncePartial( self, word, startIdx, endIdx ):
+        for rule in self.rules:
+            ret = rule.applyOnce( word, startIdx, endIdx )
+            if ret is not None:
+                consumedCharsStart, consumedCharsStop, correspondingPhonemes = ret
+                if consumedCharsStart > startIdx:
+                    if consumedCharsStop < endIdx:
+                        return self._pronouncePartial( word, startIdx, consumedCharsStart ) + correspondingPhonemes + self._pronouncePartial( word, consumedCharsStop, endIdx )
+                    else:
+                        return self._pronouncePartial( word, startIdx, consumedCharsStart ) + correspondingPhonemes
+                else:
+                    if consumedCharsStop < endIdx:
+                        return correspondingPhonemes + self._pronouncePartial( word, consumedCharsStop, endIdx )
+                    else:
+                        return correspondingPhonemes
+            else:
+                # We'll try the next one
+                pass
+        assert( False )
+
+    def pronounce( self, word ):
+        """
+        Do it.
+        """
+        return self._pronouncePartial( word, 0, len( word ) )
 
 class Poem( object ):
     """
