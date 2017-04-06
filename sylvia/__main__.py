@@ -79,7 +79,7 @@ if __name__ == "__main__":
         #
         fail = 0
         win = 0
-        for word, pronunciations in pd.entries.iteritems():
+        for word, pronunciations in sorted( [ x for x in pd.entries.iteritems() ], key=lambda x: -pd.findPopularity( x[0] ) )[:1000] :
             if not all( ord( x ) >= ord( 'a' ) and ord( x ) <= ord( 'z' ) for x in word.lower() ):
                 continue
             inferred = pd.inferPronunciation( word )
@@ -89,6 +89,7 @@ if __name__ == "__main__":
             else:
                 win += 1
             print fail, win
+        
         print " ".join( pd.inferPronunciation( args.infer_pronunciation ) )
 
     elif args.popularity:
