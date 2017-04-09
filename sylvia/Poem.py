@@ -16,8 +16,15 @@ class Poem( object ):
         """
         Create a new Poem from a string.
         """
+        # TODO: We really shouldn't need a pd
         self.sourceText = sourceText
         self.pd = dictionary
+
+    def getText( self ):
+        """
+        Return the plain text.
+        """
+        return self.sourceText
 
     def phonaestheticMap( self ):
         """

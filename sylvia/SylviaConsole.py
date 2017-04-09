@@ -15,6 +15,7 @@ import sys
 
 from PhoneticDictionary import *
 from PronunciationInferencer import *
+from Poem import *
 
 def _get_terminal_size():
     """ getTerminalSize()
@@ -186,6 +187,7 @@ class SylviaConsole( cmd.Cmd ):
         self.settings = {}
         self.settings[ "charwidth" ] = self.findDefaultCharWidth()
         self.settings[ "inferunknown" ] = True
+        self.poems = {}
 
     def checkPd( self ):
         """
@@ -241,6 +243,17 @@ class SylviaConsole( cmd.Cmd ):
         Print a list of pronunciations.
         """
         self.printWords( [ " ".join( w ) for w in pronunciationList ] )
+
+    def generateNextHandle( self ):
+        """
+        Get a unique and convenient name for a poem.
+        """
+        i = 0
+        while True:
+            name = "Poem" + str( i )
+            if name not in self.poems.keys():
+                break
+        return name
 
     #
     # CMD APIs
@@ -387,6 +400,68 @@ class SylviaConsole( cmd.Cmd ):
         self.checkPi()
         self.printPronunciations( [ self.pi.pronounce( arg ) ] )
 
+    def do_compose( self, arg ):
+        """
+        Enter a block of multiline text, which will be saved as a Poem.
+
+        Pass the unique handle of the poem, or nothing at all to
+        generate one automatically.
+
+        Press ctrl+d on a blank line to complete input.
+
+        Try it out:
+          compose poem12
+        """
+        self.checkPd()
+        args = self.tokenizeArgs( arg )
+        if len( args ) > 1:
+            self.errorMessage( "Bad number of arguments. Send the handle or nothing at all." )
+        else:
+            if len( args ) == 1:
+                handle = args[0]
+            else:
+                handle = self.generateNextHandle()
+            contents = []
+            print "\nEnter text. Press ctrl+d on an empty line to save."
+            while True:
+                try:
+                    line = raw_input( "> " )
+                except EOFError:
+                    break
+                contents.append(line)
+            contents = "\n".join( contents )
+            self.poems[ handle ] = Poem( self.pd, contents )
+            print "\n\nSaved poem to", handle
+
+    def do_show( self, arg ):
+        """
+        Show a poem. Pass the handle of the poem.
+        """
+        args = self.tokenizeArgs( arg )
+        if len( args ) != 1:
+            self.errorMessage( "Need exactly one argument: the name of the poem to show." )
+        else:
+            handle = args[0]
+            if handle not in self.poems:
+                self.errorMessage( "Poem not found." )
+            else:
+                print "\n", self.poems[ handle ].getText()
+
+    def do_euphony( self, arg ):
+        """
+        Show the phonaesthetic map for a poem. This whole feature is
+        kinda stupid, and I'm just using it to test Poem class.
+        """
+        args = self.tokenizeArgs( arg )
+        if len( args ) != 1:
+            self.errorMessage( "Need the name of the poem to map." )
+        else:
+            handle = args[0]
+            if handle not in self.poems:
+                self.errorMessage( "Poem not found." )
+            else:
+                print "\n", self.poems[ handle ].phonaestheticMap()
+
     def do_test_infer( self, arg ):
         """
         Check the output of our PronunciationInferencer against
@@ -414,7 +489,3 @@ class SylviaConsole( cmd.Cmd ):
             else:
                 print "For", word, "we guessed", " ".join( guess ), ", but valid answers are", ",".join( [ " ".join( r ) for r in real ] )
         print hits, "/", count
-
-    def do_euphony( self, arg ):
-        # TODO
-        pass
