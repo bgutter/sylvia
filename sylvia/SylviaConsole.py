@@ -382,19 +382,33 @@ class SylviaConsole( cmd.Cmd ):
         self.checkPi()
         self.printPronunciations( [ self.pi.pronounce( arg ) ] )
 
-    # def do_test( self, arg ):
-    #     """
-    #     Test stub -- comment out
-    #     """
-    #     self.checkPi()
-    #     self.checkPd()
-    #     hits = 0
-    #     for word in sorted( self.pd.entries.keys(), key=lambda x: -self.pd.findPopularity( x ) )[:1000]:
-    #         real = self.pd.findPronunciations( word )
-    #         guess = self.pi.pronounce( word )
-    #         if guess in real:
-    #             hits += 1
-    #     print hits, "/1000"
+    def do_test_infer( self, arg ):
+        """
+        Check the output of our PronunciationInferencer against
+        the most popular words in the dictionary.
+
+        Either pass the number of words to test, or no arguments
+        for the default of 1000.
+        """
+        self.checkPi()
+        self.checkPd()
+        args = self.tokenizeArgs( arg )
+        if len( args ) > 1:
+            self.errorMessage( "test_infer takes 0 or 1 args: the optional number of words to check." )
+            return
+        if len( args ) == 1:
+            count = int( args[ 0 ] )
+        else:
+            count= 1000
+        hits = 0
+        for word in sorted( self.pd.entries.keys(), key=lambda x: -self.pd.findPopularity( x ) )[:count]:
+            real = self.pd.findPronunciations( word )
+            guess = self.pi.pronounce( word )
+            if guess in real:
+                hits += 1
+            else:
+                print "For", word, "we guessed", " ".join( guess ), ", but valid answers are", ",".join( [ " ".join( r ) for r in real ] )
+        print hits, "/", count
 
     def do_euphony( self, arg ):
         # TODO
