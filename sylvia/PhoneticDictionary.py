@@ -192,27 +192,37 @@ class PhoneticDictionary( object ):
         """
         return self.popularities.get( sanitizeWord( word ), -1 )
 
-    def getRhymes( self, word, near=False ):
+    def getRhymes( self, pronunciationOrWord, near=False ):
         """
         Return list of words which rhyme with this one.
         """
         ret = []
-        for pronunciation in self.findPronunciations( word ):
+        word = None
+        if pronunciationOrWord.__class__ == str:
+            word = sanitizeWord( pronunciationOrWord )
+            pronunciations = self.findPronunciations( word )
+        elif pronunciationOrWord.__class__ == list:
+            pronunciations = [ pronunciationOrWord ]
+        for pronunciation in pronunciations:
             mustEndWith = pronunciation[ [ isVowelSound( x ) for x in pronunciation ].index( True ) : ]
             if near:
                 ret += self.regexSearch( ".* " + " #*".join( mustEndWith ) + "#*" )
             else:
                 ret += self.regexSearch( ".* " + " ".join( mustEndWith ) )
-        word = sanitizeWord( word )
         return self.sortWordsByPopularity( [ x for x in set( ret ) if x != word ] )
 
-    def getVowelMatches( self, word ):
+    def getVowelMatches( self, pronunciationOrWord ):
         """
         Returns a list of words which have a similar vowel pattern.
         """
         ret = []
-        for pronunciation in self.findPronunciations( word ):
+        word = None
+        if pronunciationOrWord.__class__ == str:
+            word = sanitizeWord( pronunciationOrWord )
+            pronunciations = self.findPronunciations( word )
+        elif pronunciationOrWord.__class__ == list:
+            pronunciations = [ pronunciationOrWord ]
+        for pronunciation in pronunciations:
             vowels = [ p for p in pronunciation if isVowelSound( p ) ]
             ret += self.regexSearch( ".*" + "#*".join( vowels ) + ".*" )
-        word = sanitizeWord( word )
         return self.sortWordsByPopularity( [ x for x in set( ret ) if x != word ] )
