@@ -1,0 +1,365 @@
+#
+# SylviaConsole.py
+#
+# Interactive console for Sylvia
+#
+
+import cmd
+import shlex
+import os
+import shlex
+import struct
+import platform
+import subprocess
+import sys
+
+from PhoneticDictionary import *
+from PronunciationInferencer import *
+
+def _get_terminal_size():
+    """ getTerminalSize()
+     - get width and height of console
+     - works on linux,os x,windows,cygwin(windows)
+     originally retrieved from:
+     http://stackoverflow.com/questions/566746/how-to-get-console-window-width-in-python
+    """
+    current_os = platform.system()
+    tuple_xy = None
+    if current_os == 'Windows':
+        tuple_xy = _get_terminal_size_windows()
+        if tuple_xy is None:
+            tuple_xy = _get_terminal_size_tput()
+            # needed for window's python in cygwin's xterm!
+    if current_os in ['Linux', 'Darwin'] or current_os.startswith('CYGWIN'):
+        tuple_xy = _get_terminal_size_linux()
+    if tuple_xy is None:
+        print "default"
+        tuple_xy = (80, 25)      # default value
+    return tuple_xy
+
+def _get_terminal_size_windows():
+    try:
+        from ctypes import windll, create_string_buffer
+        # stdin handle is -10
+        # stdout handle is -11
+        # stderr handle is -12
+        h = windll.kernel32.GetStdHandle(-12)
+        csbi = create_string_buffer(22)
+        res = windll.kernel32.GetConsoleScreenBufferInfo(h, csbi)
+        if res:
+            (bufx, bufy, curx, cury, wattr,
+             left, top, right, bottom,
+             maxx, maxy) = struct.unpack("hhhhHhhhhhh", csbi.raw)
+            sizex = right - left + 1
+            sizey = bottom - top + 1
+            return sizex, sizey
+    except:
+        pass
+
+def _get_terminal_size_tput():
+    # get terminal width
+    # src: http://stackoverflow.com/questions/263890/how-do-i-find-the-width-height-of-a-terminal-window
+    try:
+        cols = int(subprocess.check_call(shlex.split('tput cols')))
+        rows = int(subprocess.check_call(shlex.split('tput lines')))
+        return (cols, rows)
+    except:
+        pass
+
+def _get_terminal_size_linux():
+    def ioctl_GWINSZ(fd):
+        try:
+            import fcntl
+            import termios
+            cr = struct.unpack('hh',
+                               fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
+            return cr
+        except:
+            pass
+    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
+    if not cr:
+        try:
+            fd = os.open(os.ctermid(), os.O_RDONLY)
+            cr = ioctl_GWINSZ(fd)
+            os.close(fd)
+        except:
+            pass
+    if not cr:
+        try:
+            cr = (os.environ['LINES'], os.environ['COLUMNS'])
+        except:
+            return None
+    return int(cr[1]), int(cr[0])
+
+class SylviaConsole( cmd.Cmd ):
+    """
+    Simple REPL for using Sylvia.
+    """
+
+    #
+    # External APIs
+    #
+
+    def setPhoneticDictionary( self, pd ):
+        """
+        Set a PhoneticDictionary externally
+        """
+        self.pd = pd
+
+    def run( self ):
+        """
+        Launch
+        """
+        return self.cmdloop()
+
+    def setConfig( self, *args, **kwargs ):
+        """
+        Settings for the console
+        """
+        interactive = kwargs.get( "interactive", False )
+        if len( args ) == 0:
+            if interactive:
+                self.errorMessage( "No configuration option given. Type 'help config' for more information." )
+            else:
+                assert( False )
+        else:
+            config = args[0]
+
+            if config == "charwidth":
+                if len( args ) != 2:
+                    if interactive:
+                        self.errorMessage( "charwidth argument needs to be a single integer." )
+                    else:
+                        assert( False )
+                else:
+                    w = args[1]
+                    if w.__class__ == str:
+                        w = int( w )
+                    self.settings[ "charwidth" ] = w
+
+            elif config == "inferunknown":
+                if len( args ) != 2:
+                    if interactive:
+                        self.errorMessage( "inferunknown argument needs to be 0/1 or True/False." )
+                    else:
+                        assert( False )
+                else:
+                    v = args[1]
+                    if v.__class__ == str:
+                        if v.lower() == "true" or v == "1":
+                            v = True
+                        elif v.lower() == "false" or v == "0":
+                            v = False
+                        else:
+                            if interactive:
+                                self.errorMessage( "inferunknown argument needs to be 0/1 or True/False." )
+                            else:
+                                assert( False )
+                    elif v.__class__ == int:
+                        v = False if int is 0 else True
+                    else:
+                        if interactive:
+                            self.errorMessage( "inferunknown argument needs to be 0/1 or True/False." )
+                        else:
+                            assert( False )
+                        v = None
+                    if v is not None:
+                        self.settings[ "inferunknown" ] = v
+
+            else:
+                self.errorMessage( "Unknown configuration option." )
+
+    #
+    # Internal APIs
+    #
+
+    def findDefaultCharWidth( self ):
+        """
+        Figure it out.
+        """
+        return _get_terminal_size()[0]
+
+    def __init__( self ):
+        cmd.Cmd.__init__( self )
+        self.prompt = "\nsylvia> "
+        self.settings = {}
+        self.settings[ "charwidth" ] = self.findDefaultCharWidth()
+        self.settings[ "inferunknown" ] = True
+
+    def checkPd( self ):
+        """
+        Load the package default dictionary if one
+        is not set.
+        """
+        if not hasattr( self, "pd" ):
+            self.pd = loadDefaultPhoneticDictionary()
+
+    def checkPi( self ):
+        """
+        Load the package default PronunciationInferencer
+        if one is not set.
+        """
+        if not hasattr( self, "pi" ):
+            self.pi = PronunciationInferencer()
+
+    def tokenizeArgs( self, line ):
+        """
+        Split it up.
+        """
+        return shlex.split( line )
+
+    def errorMessage( self, msg ):
+        """
+        Print an error message.
+        """
+        print "ERROR:", msg
+
+    def printWords( self, wordList ):
+        """
+        Print a list of words, according to config.
+        """
+        if len( wordList ) == 0:
+            return
+        maxWordLen = max( [ len( w ) for w in wordList ] )
+        paddedLen = maxWordLen + 5
+        wordList = [ w + " " * ( paddedLen - len( w ) )for w in wordList ]
+        charwidth = self.settings[ "charwidth" ]
+        perLine = int( charwidth ) / paddedLen
+        countThisLine = 0
+        for word in wordList:
+            sys.stdout.write( word )
+            countThisLine += 1
+            if countThisLine >= perLine:
+                sys.stdout.write( "\n" )
+                countThisLine = 0
+        if len( wordList ) > 0 and len( wordList ) % perLine != 0:
+            sys.stdout.write( "\n" )
+
+    def printPronunciations( self, pronunciationList ):
+        """
+        Print a list of pronunciations.
+        """
+        self.printWords( [ " ".join( w ) for w in pronunciationList ] )
+
+    #
+    # CMD APIs
+    #
+
+    def emptyline( self ):
+        """
+        What happens when no command is entered.
+        """
+        # TODO: Decide which is less unreasonable
+        #self.errorMessage( "Enter a command. Typ 'help' for a list of commands." )
+        sys.stdout.write( "\n" )
+        return True
+
+    def do_config( self, arg ):
+        """
+        Configure the console.
+
+        charwidth    int  - The character width of the console.
+        inferunknown bool - When asked to rhyme a word not in the dictionary, whether we
+                            should infer a pronunciation.
+        """
+        args = self.tokenizeArgs( arg )
+        self.setConfig( *args, interactive=True )
+
+    def do_regex( self, arg ):
+        """
+        Run a phonetic regex query on the current PhoneticDictionary.
+
+        Assume a typical Python regular expression, with the following additions:
+
+          * # matches any consonant phoneme
+          * @ matches any vowel phoneme
+          * % matches any syllable (equivalent to #*@#*)
+          * Whitespace is irrelevant and will be removed, but must be used to separate
+            consecutive phoneme literals.
+          * See cmudict documentation for list of phoneme literals.
+
+        Try it out:
+          regex S IH #*V#* % AH
+        """
+        self.checkPd()
+        args = self.tokenizeArgs( arg )
+        if len( args ) == 0:
+            self.errorMessage( "Need an argument. Type 'help regex' to learn more." )
+        else:
+            self.printWords( self.pd.regexSearch( " ".join( args ) ) )
+
+    def do_rhyme( self, arg ):
+        """
+        Find rhymes for a word. Either give a word, or a rhyme level followed by a
+        word. Rhyme level can be one of "loose", "default", or "perfect".
+
+        Try it out:
+          rhyme loose lately
+          rhyme lately
+          rhyme perfect lately
+        """
+        # TODO inferunknown option
+        self.checkPd()
+        args = self.tokenizeArgs( arg )
+        if not ( 0 < len( args ) < 3 ):
+            self.errorMessage( "Bad number of arguments. Type 'help rhyme' for details." )
+        else:
+            level = "default"
+            if len( args ) == 1:
+                word = args[0]
+            else:
+                level, word = args
+            results = None
+            if level == "loose":
+                results = self.pd.getVowelMatches( word )
+            elif level == "default":
+                results = self.pd.getRhymes( word, near=True )
+            elif level == "perfect":
+                results = self.pd.getRhymes( word, near=False )
+            else:
+                self.errorMessage( "Unknown rhyme level. Type 'help rhyme' for details." )
+            if results:
+                self.printWords( results )
+
+    def do_popularity( self, arg ):
+        """
+        Get the popularity for a word.
+
+        Try it out:
+          popularity salmon
+          popularity google
+        """
+        self.checkPd()
+        args = self.tokenizeArgs( arg )
+        if len( args ) != 1:
+            self.errorMessage( "Bad number of arguments. Type 'help popularity' for details." )
+        else:
+            print self.pd.findPopularity( args[0] )
+
+    def do_lookup( self, arg ):
+        """
+        Lookup the pronunciation of a word in the current PhoneticDictionary.
+
+        Try it out:
+          lookup cats
+        """
+        self.checkPd()
+        args = self.tokenizeArgs( arg )
+        if len( args ) != 1:
+            self.errorMessage( "Bad number of arguments. Type 'help popularity' for details." )
+        else:
+            self.printPronunciations( self.pd.findPronunciations( args[0] ) )
+
+    def do_infer( self, arg ):
+        """
+        Infer the pronunciation of a word using magic.
+
+        Try it out:
+          infer jabberwocky
+        """
+        self.checkPi()
+        self.printPronunciations( [ self.pi.pronounce( arg ) ] )
+
+    def do_euphony( self, arg ):
+        # TODO
+        pass

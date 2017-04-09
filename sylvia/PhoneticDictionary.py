@@ -8,11 +8,18 @@
 from PhonemeDetails import *
 from LetterDetails import *
 
+import pkg_resources
 import sys
 import re
 import os
 import itertools
 import code
+
+def loadDefaultPhoneticDictionary():
+    """
+    Load the encoded dictionary distributed with Sylvia.
+    """
+    return PhoneticDictionary( binFile=pkg_resources.resource_stream( "sylvia", "cmudict.sylviabin" ) )
 
 def dictListAdd( d, k, v ):
     """
