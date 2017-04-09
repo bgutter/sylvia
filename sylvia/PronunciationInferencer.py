@@ -111,7 +111,7 @@ class PronunciationInferencer( object ):
                                   'oi' : "OY", 'oy' : "OY", 'ng' : "NG", 'ie': "IY", 'ay' : "EY",
                                   'ea' : "IY", 'ch' : "CH", "or" : [ "AO", "R" ], "ur" : "ER", "ou" : "AO",
                                   'ign' : [ "AY", "N" ], 'igm' : [ "AY", "M" ], 'qu' : [ "K", "W" ],
-                                  'oa' : "OW", 'ow' : "OW" }
+                                  'oa' : "OW", 'ow' : "OW", "ei" : "IY" }
         for l, p in highPrioritySequences.iteritems():
             if p.__class__ != list:
                 p = [ p ]
