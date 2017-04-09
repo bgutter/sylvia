@@ -171,6 +171,9 @@ class PhoneticDictionary( object ):
         """
         Apply phonetic regex to each entry in the dict, returning
         a list of words.
+
+        Regex will automatically be wrapped in '^' and '$'. Use '.*' before and after
+        query if you do not wish to align the match to start and/or end.
         """
         matchingWords = []
         regex = re.compile( preprocessPhoneticRegex( regexTextUnpreprocessed )  + "$" )
@@ -178,6 +181,21 @@ class PhoneticDictionary( object ):
             for encodedPronunciation in encodedPronunciations:
                 if regex.match( encodedPronunciation ):
                     matchingWords.append( word )
+        return self.sortWordsByPopularity( list( set( matchingWords ) ) )
+
+    def letterRegexSearch( self, regex ):
+        """
+        Find words we know which match this regex. Note that this is a normal,
+        character based regular expression, and has nothing to do with pronunciations.
+
+        Regex will automatically be wrapped in '^' and '$'. Use '.*' before and after
+        query if you do not wish to align the match to start and/or end.
+        """
+        matchingWords = []
+        regex = re.compile( "^" + regex + "$", flags=re.I )
+        for word in self.entries.keys():
+            if regex.match( word ):
+                matchingWords.append( word )
         return self.sortWordsByPopularity( list( set( matchingWords ) ) )
 
     def findPronunciations( self, word ):

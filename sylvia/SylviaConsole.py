@@ -265,6 +265,18 @@ class SylviaConsole( cmd.Cmd ):
         args = self.tokenizeArgs( arg )
         self.setConfig( *args, interactive=True )
 
+    def do_lregex( self, arg ):
+        """
+        Run a traditional character based regex on the words in the current
+        PhoneticDictionary.
+        """
+        self.checkPd()
+        args = self.tokenizeArgs( arg )
+        if len( args ) != 1:
+            self.errorMessage( "Need a single argument -- the regular expression for which to match." )
+        else:
+            self.printWords( self.pd.letterRegexSearch( args[0] ) )
+
     def do_regex( self, arg ):
         """
         Run a phonetic regex query on the current PhoneticDictionary.
@@ -277,6 +289,9 @@ class SylviaConsole( cmd.Cmd ):
           * Whitespace is irrelevant and will be removed, but must be used to separate
             consecutive phoneme literals.
           * See cmudict documentation for list of phoneme literals.
+          * Full sequence matching is done by default. That is, we automatically add "^"
+            to the start of the regex, and "$" at the end. Prepend or append ".*" to your
+            regex to override this behavior.
 
         Try it out:
           regex S IH #*V#* % AH
