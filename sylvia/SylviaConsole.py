@@ -182,6 +182,7 @@ class SylviaConsole( cmd.Cmd ):
     def __init__( self ):
         cmd.Cmd.__init__( self )
         self.prompt = "\nsylvia> "
+        self.intro = "\n    Type 'help' for options, press enter to quit."
         self.settings = {}
         self.settings[ "charwidth" ] = self.findDefaultCharWidth()
         self.settings[ "inferunknown" ] = True
@@ -249,10 +250,14 @@ class SylviaConsole( cmd.Cmd ):
         """
         What happens when no command is entered.
         """
-        # TODO: Decide which is less unreasonable
-        #self.errorMessage( "Enter a command. Typ 'help' for a list of commands." )
         sys.stdout.write( "\n" )
         return True
+
+    def default( self, arg ):
+        """
+        Called for unknown commands.
+        """
+        self.errorMessage( "Unknown command. Type 'help' for help." )
 
     def do_config( self, arg ):
         """
