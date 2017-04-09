@@ -367,6 +367,20 @@ class SylviaConsole( cmd.Cmd ):
         self.checkPi()
         self.printPronunciations( [ self.pi.pronounce( arg ) ] )
 
+    # def do_test( self, arg ):
+    #     """
+    #     Test stub -- comment out
+    #     """
+    #     self.checkPi()
+    #     self.checkPd()
+    #     hits = 0
+    #     for word in sorted( self.pd.entries.keys(), key=lambda x: -self.pd.findPopularity( x ) )[:1000]:
+    #         real = self.pd.findPronunciations( word )
+    #         guess = self.pi.pronounce( word )
+    #         if guess in real:
+    #             hits += 1
+    #     print hits, "/1000"
+
     def do_euphony( self, arg ):
         # TODO
         pass

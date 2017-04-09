@@ -46,6 +46,8 @@ class PronunciationRule( object ):
             if 'alignEnd' in self.kwargs and self.kwargs[ 'alignEnd' ]:
                 if endIdx != len( word ):
                     return None
+                if len( sequence ) > ( len( word ) - startIdx ):
+                    return None
                 if word[ -len( sequence ) : ][:: -1 ] == sequence[::-1]:
                     return ( len( word ) - len( sequence ), len( word ), self.kwargs[ 'phonemes' ] )
                 else:
@@ -82,10 +84,6 @@ class PronunciationInferencer( object ):
         """
         Build up our ruleset
         """
-        #if len( word ) == 0:
-        #    return []
-        #if len( word ) >= 2 and word[-1] == 's' and word[-2] != 's' and word[-2] in CONSONANT_LETTERS:
-        #    return self._inferPronunciationPartial( word[:-1], 0, len( word ) - 1 ) + [ "Z" if word[-2] is not 't' else "S" ]
 
         #
         # Single letter defaults ensure we always have
@@ -104,10 +102,6 @@ class PronunciationInferencer( object ):
         # Double vowel sounds
         #
         doubleVowels = { 'a' : 'AE', 'e' : "IY", 'o' : 'UW' }
-        for l, p in doubleVowels.iteritems():
-            if p.__class__ != list:
-                p = [ p ]
-            self.addRule( PronunciationRule( sequence=l+l, phonemes=p, priority=1 ) )
 
         #
         # Other high priority sequences
@@ -200,6 +194,14 @@ class PronunciationInferencer( object ):
                 self.addRule( PronunciationRule( sequence=leadingVowel + linkingConsonant + 'y', phonemes=flatten_list( [ vowelSound, consonantSound, 'IY' ] ), alignEnd=True ) )
 
         #
+        # Double vowels
+        #
+        for l, p in doubleVowels.iteritems():
+            if p.__class__ != list:
+                p = [ p ]
+            self.addRule( PronunciationRule( sequence=l+l, phonemes=p, priority=1 ) )
+
+        #
         # o at end of word after consonants
         #
 
@@ -261,6 +263,10 @@ class PronunciationInferencer( object ):
         self.addRule( PronunciationRule( sequence="ous", phonemes=[ "AH", "S" ], alignEnd=True ) )
         self.addRule( PronunciationRule( sequence="a", phonemes=[ "AH" ], alignEnd=True ) )
 
+        #if len( word ) >= 2 and word[-1] == 's' and word[-2] != 's' and word[-2] in CONSONANT_LETTERS:
+        #    return self._inferPronunciationPartial( word[:-1], 0, len( word ) - 1 ) + [ "Z" if word[-2] is not 't' else "S" ]
+
+
     def _pronouncePartial( self, word, startIdx, endIdx ):
         """
         Recursive prnunciation generation call
@@ -282,10 +288,12 @@ class PronunciationInferencer( object ):
             else:
                 # We'll try the next one
                 pass
+        print word
         assert( False )
 
     def pronounce( self, word ):
         """
         Do it.
         """
+        word = sanitizeWord( word ).lower()
         return self._pronouncePartial( word, 0, len( word ) )
