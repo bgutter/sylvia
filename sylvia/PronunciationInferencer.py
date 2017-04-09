@@ -111,7 +111,7 @@ class PronunciationInferencer( object ):
                                   'oi' : "OY", 'oy' : "OY", 'ng' : "NG", 'ie': "IY", 'ay' : "EY",
                                   'ea' : "IY", 'ch' : "CH", "or" : [ "AO", "R" ], "ur" : "ER", "ou" : "AO",
                                   'ign' : [ "AY", "N" ], 'igm' : [ "AY", "M" ], 'qu' : [ "K", "W" ],
-                                  'oa' : "OW", 'ow' : "OW", "ei" : "IY" }
+                                  'oa' : "OW", 'ow' : "OW", "ei" : "IY", "th" : "TH" }
         for l, p in highPrioritySequences.iteritems():
             if p.__class__ != list:
                 p = [ p ]
@@ -266,6 +266,7 @@ class PronunciationInferencer( object ):
         #if len( word ) >= 2 and word[-1] == 's' and word[-2] != 's' and word[-2] in CONSONANT_LETTERS:
         #    return self._inferPronunciationPartial( word[:-1], 0, len( word ) - 1 ) + [ "Z" if word[-2] is not 't' else "S" ]
 
+        self.addRule( PronunciationRule( sequence="th", phonemes=[ "DH" ], alignEnd=True ) )
 
     def _pronouncePartial( self, word, startIdx, endIdx ):
         """
