@@ -433,6 +433,29 @@ class SylviaConsole( cmd.Cmd ):
             self.poems[ handle ] = Poem( self.pd, contents )
             print "\n\nSaved poem to", handle
 
+    def do_load( self, arg ):
+        """
+        Load a text file as a Poem
+
+        Pass the path to the text file, and optionally the handle to
+        use for the new poem object.
+
+        Try it out:
+          load "~/my masterpiece.txt" masterpiece
+        """
+        self.checkPd()
+        args = self.tokenizeArgs( arg )
+        if not 0 < len( args ) < 3:
+            self.errorMessage( "Bad number of arguments. Type 'help load' for more info." )
+        else:
+            if len( args ) == 2:
+                handle = args[1]
+            else:
+                handle = self.generateNextHandle()
+            with open( args[0], "r" ) as fin:
+                self.poems[ handle ] = Poem( self.pd, fin.read() )
+                print "\nSaved poem to", handle
+
     def do_show( self, arg ):
         """
         Show a poem. Pass the handle of the poem.
