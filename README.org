@@ -1,0 +1,310 @@
+#+TITLE: Sylvia
+
+Search pronunciations in the CMU Pronouncing Dictionary using a reglular-expression like syntax. Input-format regular expressions are lightly preprocessed into Python-format regular expressions, and then mapped over an encoded version of cmudict. Results are sorted by popularity using Peter Norvig's list of word popularities derived from Google's N-Gram dataset.
+
+* Installation
+
+#+BEGIN_SRC sh
+brandon@brandon-babypad-linux ~> pip2 install sylvia
+#+END_SRC
+
+* Usage
+
+Interactive Sylvia prompt:
+
+#+BEGIN_SRC
+brandon@brandon-babypad-linux ~> python2 -m sylvia
+
+    Type 'help' for options, press enter to quit.
+
+sylvia> 
+#+END_SRC
+
+Run one-off command:
+
+#+BEGIN_SRC
+brandon@brandon-babypad-linux ~> python2 -m sylvia -c "regex G #* AE #* IH #* %"
+Gravity             Graphical           Grandchildren       Garrison            Graphically         
+Gallegos            Gravitate           Garretson           Gastineau           Gallimard           
+Galligan            Grandison           Gallivan            Glatfelter          Garibay             
+Garelick            Garrigan            Garriga             Gravitates          Galipeau            
+Gavigan             Gamelin             Gateley             Grandillo           Galipault           
+Garringer           Gradison            Grandchildren's     Glastetter          Garity              
+Galliher            Gantenbein
+#+END_SRC
+
+* Commands
+
+Sylvia's functionality is broken down into various subcommands. These commands can be run from the interactive prompt, or as single-lines directly from your system shell.
+
+** regex
+
+This is the most powerful feature of Sylvia. It allows searches of cmudict based on phoneme patterns.
+
+Sylvia's query format is nearly identical to traditional Python 2 regular expressions, with the exception that it is intended not to match against patterns of characters, but rather patterns of phonemes. To construct a regular expression query for Sylvia, remember the following rules:
+
+1. Whitespace must be used to delimit consecutive phoneme literals. It may also be used anywhere else in the regular expression, as whitespace is meaningless in the context of a phoneme sequence, and will be stripped during preprocessing.
+1. `#` is a shortcut for "any consonant sound"
+1. `@` is a shortcut for "any vowel sound"
+1. `%` is a shortcut for "any syllable", and is equivalant to `#*@#*`
+1. Otherwise, whatever flies with Python's regular expression format will work in Sylvia. Just use some common sense, as some things (such as character classes) will be wholly inapplicable to searches in phoneme-space.
+
+Use of this command is as follows:
+
+#+BEGIN_SRC
+sylvia> regex {regex tokens}
+#+END_SRC
+
+[[http://www.speech.cs.cmu.edu/cgi-bin/cmudict][Consult Carnegie Mellon's cmudict documentation]] to learn more about the phoneme set.
+
+[[https://docs.python.org/2/library/re.html][Consult the Python docs]] to learn more about Python's regex format.
+
+*** Examples
+
+Find words starting with zero or more consonant sounds, followed by the "long E" sound (phoneme IY), followed by zero or more consonant sounds, followed by the "ed" sound (the phoneme sequence EH D):
+
+#+BEGIN_SRC
+sylvia> regex #* IY #* EH D
+Steelhead     Seabed        Beachhead     Retread       Behead 
+#+END_SRC
+
+Find all six syllable words where the first syllable uses the "short i" sound (phoneme IH), and ends in either the D or P phonemes.
+
+#+BEGIN_SRC
+sylvia> regex #*IH%%%%%(D|P)
+Differentiated        Individualized        Deteriorated          Institutionalized     
+Incapacitated         Internationalized     Interrelationship     Misappropriated       
+Disassociated         Discombobulated       Insubstantiated       
+#+END_SRC
+
+Note here that only five % symbols are needed, as a single vowel sound constitutes a single syllable, and we explicitly call out the first vowel sound via IH.
+
+Find all words that start with the R sound, followed by some vowel, followed by the D sound, followed by another vowel, followed by the NG phoneme:
+
+#+BEGIN_SRC
+sylvia> regex R@D@NG
+Reading     Riding      Redding     Raiding     Ridding     Reding      Rodding     Ruding      Rawding
+#+END_SRC
+
+** lookup
+
+If you just want to lookup the pronunciations for a word, you can do that too. This can be a good way to quickly learn the phonemes for a particular sound when constructing queries. Due to cultural and geographic variations in pronunciation, this command can return multiple sequences.
+
+Use of this command is as follows:
+
+#+BEGIN_SRC
+sylvia> lookup {word}
+#+END_SRC
+
+*** Examples
+
+#+BEGIN_SRC
+sylvia> lookup turkmenistan
+T ER K M EH N IH S T AE N     
+#+END_SRC
+
+#+BEGIN_SRC
+sylvia> lookup capture
+K AE P CH ER     
+#+END_SRC
+
+#+BEGIN_SRC
+sylvia> lookup tomato
+T AH M EY T OW     T AH M AA T OW     
+#+END_SRC
+
+** rhyme
+
+Sylvia can act as a rhyming dictionary, returning words which rhyme with a given word. There are three "rhyme levels", which define how rhymes are determined.
+
+1. *loose* is the most permissive model. It returns a list of words which contain, as a subsequence, the same vowels as the given word. Consonant sounds are ignored. It tends to return many, many results and is rarely useful.
+2. *default* returns words which end with the same sounds as the given word, though other consonant sounds can be interspersed. The "end" of the given word is defined to be the first vowel phoneme of the given word's pronunciation.
+3. *perfect* is the same as default, but does not allow unmatched consonants.
+
+Use of this command is as follows:
+
+#+BEGIN_SRC
+sylvia> rhyme {rhyme-level} {word}
+#+END_SRC
+
+rhyme-level can be omitted if default behavior is desired.
+
+There are plans to improve these models by matching phonemes based on their vocal characteristics. For example, all nasal phonemes may be considered matches by default, or all plosive sounds, etc. The behavior documented above is subject to change at any time.
+
+*** Examples
+
+List words which rhyme with "shaping", using the default algorithm.
+
+#+BEGIN_SRC
+sylvia> rhyme shaping
+Landscaping     Escaping        Gaping          Taping          Scraping        Raping          
+Reshaping       Videotaping     Stapling        Draping         Tapings         Aping           
+Scrapings       Traipsing       
+#+END_SRC
+
+Find all rhymes for "afterall" using the loose algorithm.
+
+#+BEGIN_SRC
+sylvia> rhyme loose afterall
+Mastercard        Aftermarket       Abercrombie       Adirondack        Laparoscopic      Alvarado          
+Aftershock        Pavarotti         Laparoscopy       Afterthought      Kasparov          Algernon          
+Aharon            Aftershocks       Khabarovsk        Amerada           Afterthoughts     Vandermark        
+Zakharov          Scattershot       Ameron            Vanderwal         Hammerlock        Averof            
+Rasterop          Afflerbach        Rasterops         Mastercard's      Mazzorana         Vanderlaan        
+Bankvermont       Vanderschaaf      Vandermolen       Ameron's          Vanderwall        Pavarotti's       
+Mastercards       Aftermarkets      Caterwaul         Kadrmas           
+#+END_SRC
+
+Find all rhymes for "cranky" using the perfect algorithm.
+
+#+BEGIN_SRC
+sylvia> rhyme perfect cranky
+Yankee          Frankie         Franke          Hanky           Panky           Francie         
+Sankey          Lanky           Hankey          Sankei          Yankey          Branki          
+Pankki          Stankey         Postipankki     
+#+END_SRC
+
+** infer
+
+Sylvia can infer the pronunciation of unknown words using it's own rule-based text-to-phoneme engine. Don't expect great performance though -- written English is only ostensibly phonetic, and rules-based approaches are not fantastic. Any deep-learning based solution to this problem is likely to beat the snot out of Sylvia's engine.
+
+Use of this command is as follows:
+
+#+BEGIN_SRC
+sylvia> infer {word}
+#+END_SRC
+
+*** Examples
+
+Infer a pronunciation for the word "rooster", then compare to the value from lookup.
+
+#+BEGIN_SRC
+sylvia> infer rooster
+R UW S T ER     
+
+sylvia> lookup rooster
+R UW S T ER 
+#+END_SRC
+
+Infer pronunciations for some made-up words.
+
+#+BEGIN_SRC
+sylvia> infer rafloy
+R AE F L OY     
+
+sylvia> infer rabbilt
+R AE B IH L T     
+
+sylvia> infer fliberdoodle
+F L IH B ER D UW D AH L   
+#+END_SRC
+
+** lregex
+
+Sylvia can lookup words based on normal regular expressions. This command doesn't touch on anything phonetic, but may be useful in the same use-cases as Sylvia itself.
+
+Use of this command is as follows:
+
+#+BEGIN_SRC
+sylvia> lregex {regex tokens}
+#+END_SRC
+
+*** Examples
+
+Find all words /which are spelled/ with a C at the start, a P at the end, and which contain either a T or a D.
+
+#+BEGIN_SRC
+sylvia> lregex c.*(t|d).*p
+Citizenship         Craftsmanship       Countertop          Courtship           Catnip              
+Citicorp            Conservatorship     Catsup              Crudup              Catchup             
+Colstrip            Catnap              Cutlip              Coltharp            
+#+END_SRC
+
+** popularity
+
+You can ask Sylvia for the popularity of a word. This value depends on the data-source used when compiling the dictionary, but by default, it is the value in Peter Norvig's word popularity list. Larger values indicate higher popularity (think occurrences, not rank).
+
+Use of this command is as follows:
+
+#+BEGIN_SRC
+sylvia> popularity {word}
+#+END_SRC
+
+*** Examples
+
+Find the popularity of a popular, typical, and rare word.
+
+#+BEGIN_SRC
+sylvia> popularity I
+3086225277
+
+sylvia> popularity green
+108287905
+
+sylvia> popularity teutonic
+301907
+#+END_SRC
+
+
+* Experimental Functionality
+
+Sylvia primarily works with individual words and phonemes. However, there are some commands which work with poems instead. A poem is simply a body of text. Working with poems in Sylvia is clunky and aimed towards development, not end-users. Sylvia isn't, and won't become, a text editor. But, it may become a /library/ for text editors...
+
+** compose
+
+Compose a poem and bind its content to some name.
+
+#+BEGIN_SRC
+sylvia> compose my-masterpiece
+
+Enter text. Press ctrl+d on an empty line to save.
+> Roses are red, violets are blue,
+> I am reading this and so are you
+> 
+
+Saved poem to my-masterpiece
+#+END_SRC
+
+** show
+
+Shows a poem.
+
+#+BEGIN_SRC
+sylvia> show my-masterpiece
+
+Roses are red, violets are blue,
+I am reading this and so are you
+#+END_SRC
+
+** load
+
+Loads a poem from disk.
+
+#+BEGIN_SRC
+sylvia> load "/path/to/file.txt" my-other-masterpiece
+#+END_SRC
+
+** euphony
+
+Visualizes euphonious vs cacophonous phonemes in a poem.
+
+#+BEGIN_SRC
+sylvia> compose eutest
+
+Enter text. Press ctrl+d on an empty line to save.
+> smooth, flowing lines
+> Crack! Bang! Obnoxious racket.
+> 
+
+Saved poem to eutest
+
+sylvia> euphony eutest
+
+~~~~, ~~~~~ ~~~~
+X~~X! X~~! ~X~~X~~~ ~~X~X.
+#+END_SRC
+
+* Other Information
+
+If curious, [[http://norvig.com/ngrams/][read up on Peter Norvig's word popularity data]], the data source used for Sylvia's default word popularities.
+
