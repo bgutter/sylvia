@@ -1,0 +1,133 @@
+#+TITLE: Sylvia Mode
+#+AUTHOR: Brandon Guttersohn
+
+A major mode for working with text phonetically.
+
+* Major Mode
+
+** Setup
+
+#+BEGIN_SRC emacs-lisp
+(defvar sylvia:idle-timer nil)
+(defvar sylvia:idle-delay 0.5)
+
+(defun sylvia-mode (&optional enabled)
+  "Major mode for editing text with a focus on phonetic values."
+  (interactive)
+  (let
+      ((enabled (or enabled (if (eq major-mode 'sylvia-mode) 0 1))))
+    (when (> enabled 0)
+      (sylvia:setup))))
+
+(defun sylvia:setup ()
+  "Configure sylvia-mode"
+  (interactive)
+  (setq major-mode 'sylvia-mode)
+  (make-local-variable 'sylvia:idle-timer)
+  (when sylvia:idle-timer
+      (cancel-timer sylvia:idle-timer))
+  (add-hook 'post-command-hook 'sylvia:post-command-actions nil t)
+  (setq sylvia:idle-timer (run-with-idle-timer sylvia:idle-delay t 'sylvia:idle-actions)))
+
+(defun sylvia:mode-p ()
+  "Sylvia the current major mode?"
+  (eq major-mode 'sylvia-mode))
+
+(defun sylvia:cleanup ()
+  "Clean up sylvia-mode"
+  (interactive)
+  (when sylvia:idle-timer
+    (cancel-timer sylvia:idle-timer))
+  (remove-hook 'post-command-hook 'sylvia:post-command-actions t))
+
+(defun sylvia:idle-actions ()
+  "Test"
+  (when (eq major-mode 'sylvia-mode)
+    (let*
+      ((word         (thing-at-point 'word 'no-properties))
+       (phoneme-repr (and word (sylvia:as-phonemes word))))
+    (when phoneme-repr
+      ;(let ((message-log-max nil))
+      ;  (message (concat word ": " phoneme-repr)))
+      ))))
+
+(defun sylvia:post-command-actions ()
+    "Run after every command."
+    (sylvia:echo-phonemes-at-point))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:post-command-actions
+
+** Echo Phonemes at Point
+
+#+BEGIN_SRC emacs-lisp
+  (defun sylvia:echo-phonemes-at-point ()
+    "Show the phonemes."
+    (when (null (current-message))
+      (let*
+          ((message-log-max nil)
+           (word         (thing-at-point 'word 'no-properties))
+           (phoneme-repr (and word (sylvia:as-phonemes word))))
+        (message (concat word ": " phoneme-repr)))))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:echo-phonemes-at-point
+
+** Syllable Counts
+
+#+BEGIN_SRC emacs-lisp
+  (defvar sylvia:syllable-count-overlays nil)
+
+  (defun sylvia:update-syllable-margins (win)
+    (make-local-variable 'sylvia:syllable-count-overlays)
+    (
+    (save-excursion
+      (goto-char (window-start win))
+      (while (not (eobp))
+        (let*
+            ((str "TEST"))
+            (let ((ov (make-overlay (point) (point))))
+              (push ov sylvia:syllable-count-overlays)
+              (overlay-put ov 'before-string
+                           (propertize " " 'display `((margin left-margin) ,str)))
+              ;(overlay-put ov 'linum-str str)
+))
+        (forward-line))
+      (set-window-margins win 10)))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:update-syllable-margins
+
+
+* Glue Code
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:lookup-or-infer (word)
+  "Lookup phonemes, infer if failed to do so."
+  (let*
+      ((lookup   (sylvia:lookup word))
+       (phonemes (if (> (length lookup) 0) lookup (sylvia:infer word))))
+    phonemes))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:lookup-or-infer
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:as-phonemes (string)
+  "Convert this line of text to phonemes."
+  (let
+      ((phonemes (first (sylvia:lookup-or-infer (first (split-string string))))))
+    (and phonemes (string-join phonemes " "))))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:as-phonemes
+
+
+
+
+
