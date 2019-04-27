@@ -227,7 +227,7 @@ class SylviaConsole( cmd.Cmd ):
         paddedLen = maxWordLen + 5
         wordList = [ w + " " * ( paddedLen - len( w ) )for w in wordList ]
         charwidth = self.settings[ "charwidth" ]
-        perLine = int( charwidth ) / paddedLen
+        perLine = max( 1, int( charwidth ) / paddedLen )
         countThisLine = 0
         for word in wordList:
             sys.stdout.write( word )
