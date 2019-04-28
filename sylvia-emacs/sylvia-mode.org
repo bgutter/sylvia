@@ -29,10 +29,6 @@ A major mode for working with text phonetically.
   (add-hook 'post-command-hook 'sylvia:post-command-actions nil t)
   (setq sylvia:idle-timer (run-with-idle-timer sylvia:idle-delay t 'sylvia:idle-actions)))
 
-(defun sylvia:mode-p ()
-  "Sylvia the current major mode?"
-  (eq major-mode 'sylvia-mode))
-
 (defun sylvia:cleanup ()
   "Clean up sylvia-mode"
   (interactive)
@@ -40,16 +36,12 @@ A major mode for working with text phonetically.
     (cancel-timer sylvia:idle-timer))
   (remove-hook 'post-command-hook 'sylvia:post-command-actions t))
 
+(defun sylvia:mode-p ()
+  "Sylvia the current major mode?"
+  (eq major-mode 'sylvia-mode))
+
 (defun sylvia:idle-actions ()
-  "Test"
-  (when (eq major-mode 'sylvia-mode)
-    (let*
-      ((word         (thing-at-point 'word 'no-properties))
-       (phoneme-repr (and word (sylvia:as-phonemes word))))
-    (when phoneme-repr
-      ;(let ((message-log-max nil))
-      ;  (message (concat word ": " phoneme-repr)))
-      ))))
+  "Test")
 
 (defun sylvia:post-command-actions ()
     "Run after every command."
@@ -67,9 +59,10 @@ A major mode for working with text phonetically.
     (when (null (current-message))
       (let*
           ((message-log-max nil)
-           (word         (thing-at-point 'word 'no-properties))
-           (phoneme-repr (and word (sylvia:as-phonemes word))))
-        (message (concat word ": " phoneme-repr)))))
+           (word          (thing-at-point 'word 'no-properties))
+           (phoneme-reprs (and word (sylvia:as-phonemes word))))
+        (when phoneme-reprs
+          (message (concat word ": " (string-join phoneme-reprs "   ")))))))
 #+END_SRC
 
 #+RESULTS:
@@ -104,6 +97,8 @@ A major mode for working with text phonetically.
 
 * Glue Code
 
+** Lookup or Infer
+
 #+BEGIN_SRC emacs-lisp
 (defun sylvia:lookup-or-infer (word)
   "Lookup phonemes, infer if failed to do so."
@@ -116,12 +111,14 @@ A major mode for working with text phonetically.
 #+RESULTS:
 : sylvia:lookup-or-infer
 
+** As Phonemes
+
 #+BEGIN_SRC emacs-lisp
 (defun sylvia:as-phonemes (string)
   "Convert this line of text to phonemes."
   (let
-      ((phonemes (first (sylvia:lookup-or-infer (first (split-string string))))))
-    (and phonemes (string-join phonemes " "))))
+      ((phonemes (sylvia:lookup-or-infer (first (split-string string)))))
+    (and phonemes (mapcar (lambda (x) (string-join x " ") ) phonemes))))
 #+END_SRC
 
 #+RESULTS:
