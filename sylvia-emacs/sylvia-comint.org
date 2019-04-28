@@ -167,11 +167,13 @@ Modified from: https://stackoverflow.com/questions/46631920/silently-send-comman
                 (buffer-string)
                 "\n")))
       (sylvia:synchronous-repl-command cmd)
-      (process-send-eof "Sylvia"))))
+      (process-send-eof "Sylvia")
+      (let ((inhibit-quit  nil))
+        (accept-process-output (get-process "Sylvia"))))))
 #+END_SRC
 
 #+RESULTS:
-: Sylvia
+: sylvia:compose-buffer
 
 *** Euphony
 #+BEGIN_SRC emacs-lisp
@@ -191,6 +193,7 @@ Modified from: https://stackoverflow.com/questions/46631920/silently-send-comman
 
 #+RESULTS:
 : sylvia:syllable-counts
+
 
 * Tests
 :PROPERTIES:
@@ -227,7 +230,6 @@ Modified from: https://stackoverflow.com/questions/46631920/silently-send-comman
 
 #+RESULTS:
 : 0
-
 
 ** Rhyme
 

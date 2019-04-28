@@ -45,11 +45,19 @@ A major mode for working with text phonetically.
 
 (defun sylvia:post-command-actions ()
     "Run after every command."
-    (sylvia:echo-phonemes-at-point))
+    (when (sylvia:mode-p)
+      (sylvia:compose-current-buffer)
+      (sylvia:echo-phonemes-at-point)
+      (sylvia:update-syllable-margins)))
+
+(defun sylvia:compose-current-buffer ()
+    (interactive)
+    "Update contents of buffer into Sylvia."
+    (sylvia:compose-buffer (buffer-name)))
 #+END_SRC
 
 #+RESULTS:
-: sylvia:post-command-actions
+: sylvia:compose-current-buffer
 
 ** Echo Phonemes at Point
 
@@ -73,22 +81,30 @@ A major mode for working with text phonetically.
 #+BEGIN_SRC emacs-lisp
   (defvar sylvia:syllable-count-overlays nil)
 
-  (defun sylvia:update-syllable-margins (win)
+  (defun sylvia:update-syllable-margins ()
+    (interactive)
+    "Update left margin to show syllable counts."
+    ;; ensure this is buffer-local (don't think I'm doing this right?)
     (make-local-variable 'sylvia:syllable-count-overlays)
-    (
+    ;; clear previous overlays
+    (dolist (ov sylvia:syllable-count-overlays)
+      (delete-overlay ov))
+    ;; add new overlays
     (save-excursion
-      (goto-char (window-start win))
-      (while (not (eobp))
-        (let*
-            ((str "TEST"))
-            (let ((ov (make-overlay (point) (point))))
-              (push ov sylvia:syllable-count-overlays)
-              (overlay-put ov 'before-string
-                           (propertize " " 'display `((margin left-margin) ,str)))
-              ;(overlay-put ov 'linum-str str)
-))
+      (let
+          ((win (get-buffer-window (current-buffer)))
+           (sylcounts (sylvia:syllable-counts (buffer-name))))
+        (goto-char (window-start win))
+        (while (not (eobp))
+          (let*
+              ((ov     (make-overlay (point) (point)))
+               (cnt    (first sylcounts))
+               (cntstr (if (> (string-to-number cnt) 0) cnt "")))
+            (push ov sylvia:syllable-count-overlays)
+            (overlay-put ov 'before-string (propertize " " 'display `((margin left-margin) ,cntstr)))
+            (setq sylcounts (cdr sylcounts)))
         (forward-line))
-      (set-window-margins win 10)))
+      (set-window-margins win 4))))
 #+END_SRC
 
 #+RESULTS:
