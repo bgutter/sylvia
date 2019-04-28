@@ -4,8 +4,12 @@
 # Wrap and interface an English text.
 #
 
+import re
+
 from PhonemeDetails import *
 from LetterDetails import *
+
+WORD_SPLIT_RE = re.compile( "([^a-zA-Z'])" )
 
 class Poem( object ):
     """
@@ -33,7 +37,7 @@ class Poem( object ):
         other whitespace or symbols are retained in-place.
         """
         tokensOut = []
-        for token in re.split( "([^a-zA-Z'])", self.sourceText ):
+        for token in WORD_SPLIT_RE.split( self.sourceText ):
             pronunciations = self.pd.findPronunciations( token )
             if len( pronunciations ) > 0:
                 # TODO: Using first for now
@@ -46,3 +50,21 @@ class Poem( object ):
             else:
                 tokensOut.append( token )
         return "".join( tokensOut )
+
+    def syllableCounts( self ):
+        """
+        Get the number of syllables on each line.
+        """
+        counts = []
+        for line in self.sourceText.splitlines():
+            count = 0
+            for word in WORD_SPLIT_RE.split( line ):
+                pronunciations = self.pd.findPronunciations( word )
+                if len( pronunciations ) > 0:
+                    # TODO: Using first for now
+                    pronunciation = pronunciations[0]
+                    for phoneme in pronunciation:
+                        if PHONEME_DETAILS__by_text[ phoneme ].isVowelSound():
+                            count += 1
+            counts.append( count )
+        return counts

@@ -155,6 +155,7 @@ Modified from: https://stackoverflow.com/questions/46631920/silently-send-comman
 : sylvia:rhyme
 
 ** Buffer Operations
+*** Compose
 
 #+BEGIN_SRC emacs-lisp
 (defun sylvia:compose-buffer (buffer-name)
@@ -172,6 +173,7 @@ Modified from: https://stackoverflow.com/questions/46631920/silently-send-comman
 #+RESULTS:
 : Sylvia
 
+*** Euphony
 #+BEGIN_SRC emacs-lisp
 (defun sylvia:euphony (buffer-name)
     "Get phonaesthetic map for current composed version of buffer."
@@ -180,6 +182,15 @@ Modified from: https://stackoverflow.com/questions/46631920/silently-send-comman
 
 #+RESULTS:
 : sylvia:euphony
+*** Syllable Counts
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:syllable-counts (buffer-name)
+  "Get the syllable counts for each line in buffer."
+  (split-string (sylvia:synchronous-repl-command (concat "syllable_counts " buffer-name))))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:syllable-counts
 
 * Tests
 :PROPERTIES:
@@ -260,6 +271,15 @@ Modified from: https://stackoverflow.com/questions/46631920/silently-send-comman
 : ~~~~~ ~~ ~~X
 : biolets ~~ X~~
 : 
+
+** Syllable Counts
+
+#+BEGIN_SRC emacs-lisp
+(sylvia:syllable-counts "testpoem")
+#+END_SRC
+
+#+RESULTS:
+| 11 | 14 | 14 | 7 | 10 | 11 | 7 | 8 | 13 | 7 | 12 | 12 | 12 | 18 | 12 | 15 |
 
 * References
 

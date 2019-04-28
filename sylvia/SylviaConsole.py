@@ -485,6 +485,20 @@ class SylviaConsole( cmd.Cmd ):
             else:
                 print "\n", self.poems[ handle ].phonaestheticMap()
 
+    def do_syllable_counts( self, arg ):
+        """
+        Show the syllable counts for a poem.
+        """
+        args = self.tokenizeArgs( arg )
+        if len( args ) != 1:
+            self.errorMessage( "Need the name of the poem to map." )
+        else:
+            handle = args[0]
+            if handle not in self.poems:
+                self.errorMessage( "Poem not found." )
+            else:
+                print "\n", " ".join( [ str( x ) for x in self.poems[ handle ].syllableCounts() ] )
+
     def do_test_infer( self, arg ):
         """
         Check the output of our PronunciationInferencer against
