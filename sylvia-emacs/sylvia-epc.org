@@ -126,7 +126,7 @@ An EPC interface between Emacs Lisp and Sylvia
 #+BEGIN_SRC emacs-lisp
 (defun sylvia:rhyme (word &optional rhyme-level callback)
   "Find rhymes for a word. If callback is given, the call is async."
-  (sylvia:--epc-sync-or-async 'rhyme `(,word ,rhyme-level) callback))
+  (sylvia:--epc-sync-or-async 'rhyme `(,word ,(symbol-name rhyme-level)) callback))
 #+END_SRC
 
 #+RESULTS:
