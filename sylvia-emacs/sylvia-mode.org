@@ -110,8 +110,9 @@ A major mode for working with text phonetically.
         (while (not (eobp))
           (let*
               ((ov     (make-overlay (point) (point)))
-               (cnt    (number-to-string (first sylcounts)))
-               (cntstr (if (> (string-to-number cnt) 0) cnt "")))
+               (cnt    (format "% 4s" (number-to-string (first sylcounts))))
+               (cntstr (if (> (string-to-number cnt) 0) cnt "    ")))
+            (put-text-property 0 4 'face '('bold (foreground-color . "#FFFF00")) cntstr)
             (push ov sylvia:syllable-count-overlays)
             (overlay-put ov 'before-string (propertize " " 'display `((margin left-margin) ,cntstr)))
             (setq sylcounts (cdr sylcounts)))
