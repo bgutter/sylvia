@@ -30,6 +30,12 @@ class Poem( object ):
         """
         return self.sourceText
 
+    def setText( self, text ):
+        """
+        Set the poem text.
+        """
+        self.sourceText = text
+
     def phonaestheticMap( self ):
         """
         EXPERIMENTAL

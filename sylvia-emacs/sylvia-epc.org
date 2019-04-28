@@ -1,0 +1,230 @@
+#+TITLE: Sylvia EPC
+#+AUTHOR:  Brandon Guttersohn
+
+An EPC interface between Emacs Lisp and Sylvia
+
+* Server Connection
+
+** Initial Setup
+
+#+BEGIN_SRC emacs-lisp
+(require 'epc)
+(defvar sylvia:epc-manager nil "EPC Manager Object for Sylvia.")
+#+END_SRC
+
+#+RESULTS:
+: sylvia:epc-manager
+
+** Server Control
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:start-epc ()
+  "Start the EPC server & create the client."
+  (interactive)
+  (if sylvia:epc-manager
+    (sylvia:stop-epc))
+  (setq sylvia:epc-manager (epc:start-epc "python2" '("-m" "sylvia" "-e"))))
+
+(defun sylvia:stop-epc ()
+  "Stop the EPC server and release the client."
+  (epc:stop-epc sylvia:epc-manager)
+  (setq sylvia:epc-manager nil))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:stop-epc
+
+** APIs
+
+*** Wrappers
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:--epc-sync (func args)
+  "Call a Sylvia command synchronously."
+  (epc:call-sync sylvia:epc-manager func args))
+
+(defun sylvia:--epc-async (func args cb)
+  "Call a Sylvia command asynchronously with a callback."
+  (deferred:$
+    (epc:call-deferred sylvia:epc-manager func args)
+    (deferred:nextc it cb)))
+
+(defun sylvia:--epc-sync-or-async (func args cb)
+  "Call a Sylvia command async if callback given, else synchronously."
+  (if cb
+      (sylvia:--epc-async func args cb)
+    (sylvia:--epc-sync func args)))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:--epc-sync-or-async
+
+*** Lookup
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:lookup (word &optional callback)
+  "Lookup the phonemes for a word. If callback is given, the call is async."
+  (sylvia:--epc-sync-or-async 'lookup `(,word) callback))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:lookup
+
+**** Tests
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+#+BEGIN_SRC emacs-lisp
+(sylvia:start-epc)
+#+END_SRC
+
+#+RESULTS:
+: #s(epc:manager "python2 -m sylvia -e" #<process epc:server:1085> ("python2" "-m" "sylvia" "-e") 50673 #s(epc:connection "epc con 1086" #<process epc con 1086> #<buffer *epc con 1086*> ("epc con 1086" nil (methods . #s(deferred (lambda (args) (epc:log "SIG METHODS: %S" args) (epc:handler-methods #0 (caadr args))) deferred:default-errorback deferred:default-cancel nil nil nil)) (epc-error . #s(deferred (lambda (args) (epc:log "SIG EPC-ERROR: %S" args) (apply (quote epc:handler-epc-error) #0 (epc:args args))) deferred:default-errorback deferred:default-cancel nil nil nil)) (return-error . #s(deferred (lambda (args) (epc:log "SIG RET-ERROR: %S" args) (apply (quote epc:handler-return-error) #0 (epc:args args))) deferred:default-errorback deferred:default-cancel nil nil nil)) (return . #s(deferred (lambda (args) (epc:log "SIG RET: %S" args) (apply (quote epc:handler-return) #0 (epc:args args))) deferred:default-errorback deferred:default-cancel nil nil nil)) (call . #s(deferred (lambda (args) (epc:log "SIG CALL: %S" args) (apply (quote epc:handler-called-method) #0 (epc:args args))) deferred:default-errorback deferred:default-cancel nil nil nil)))) nil nil nil)
+
+#+BEGIN_SRC emacs-lisp
+(sylvia:lookup "saturday" (lambda (ret) (message "WOOT: %S" ret)))
+#+END_SRC
+
+#+RESULTS:
+: #s(deferred (lambda (ret) (message "WOOT: %S" ret)) deferred:default-errorback deferred:default-cancel nil nil nil)
+
+#+BEGIN_SRC emacs-lisp
+(sylvia:lookup "faster")
+#+END_SRC
+
+#+RESULTS:
+| F | AE | S | T | ER |
+
+#+BEGIN_SRC emacs-lisp
+(sylvia:lookup "tomato")
+#+END_SRC
+
+#+RESULTS:
+| T | AH | M | EY | T | OW |
+| T | AH | M | AA | T | OW |
+
+*** Infer
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:infer (word &optional callback)
+  "Infer the phonemes for a word. If callback is given, the call is async."
+  (sylvia:--epc-sync-or-async 'infer `(,word) callback))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:infer
+
+**** Tests
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+#+BEGIN_SRC emacs-lisp
+(sylvia:infer "saturday")
+#+END_SRC
+
+#+RESULTS:
+| S | AE | T | ER | D | EY |
+
+*** Rhyme
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:rhyme (word &optional rhyme-level callback)
+  "Find rhymes for a word. If callback is given, the call is async."
+  (sylvia:--epc-sync-or-async 'rhyme `(,word ,rhyme-level) callback))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:rhyme
+
+**** Tests
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+#+BEGIN_SRC emacs-lisp
+(sylvia:rhyme "baby")
+#+END_SRC
+
+#+RESULTS:
+| Maybe | Babies | Rabies | Ably | Nabi | Raby | Crybaby | Mabey | Achebe | Maybee | Haby | Slaby | Graybeard | Taibi | Rabey | Grandbaby | Graybeards | Baby's | Sabey | Grandbabies | Smaby | Rabes | Bailby | Babies' | Cabey | Nanobaby |
+
+*** Update Poem
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:update-poem (&optional buffer-name callback)
+  "Update Sylvia instance with buffer contents. If callback is given, the call is async."
+  (let*
+      ((buffer-name (or buffer-name (buffer-name)))
+       (content     (with-current-buffer (get-buffer buffer-name) (buffer-substring-no-properties (point-min) (point-max)))))
+    (sylvia:--epc-sync-or-async 'update_poem `(,content) callback)))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:update-poem
+
+**** Tests
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+#+BEGIN_SRC emacs-lisp
+(sylvia:update-poem "testpoem")
+#+END_SRC
+
+#+RESULTS:
+
+*** Syllable Counts
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:poem-syllable-counts (&optional callback)
+  "Get syllable counts for current poem. If callback is given, the call is async."
+  (sylvia:--epc-sync-or-async 'poem_syllable_counts `() callback))
+#+END_SRC
+
+#+RESULTS:
+: sylvia:poem-syllable-counts
+
+**** Tests
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+#+BEGIN_SRC emacs-lisp
+(sylvia:update-poem "testpoem")
+(sylvia:poem-syllable-counts)
+#+END_SRC
+
+#+RESULTS:
+| 12 | 14 | 14 | 7 | 10 | 11 | 7 | 9 | 13 | 7 | 13 | 12 | 12 | 18 | 12 | 15 |
+
+
+** Testing
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+
+#+RESULTS:
+: sylvia:stop-epc
+
+#+BEGIN_SRC emacs-lisp
+(sylvia:start-epc)
+#+END_SRC
+
+#+RESULTS:
+: #s(epc:manager "python2 -m sylvia -e" #<process epc:server:977> ("python2" "-m" "sylvia" "-e") 52753 #s(epc:connection "epc con 978" #<process epc con 978> #<buffer *epc con 978*> ("epc con 978" nil (methods . #s(deferred (lambda (args) (epc:log "SIG METHODS: %S" args) (epc:handler-methods #0 (caadr args))) deferred:default-errorback deferred:default-cancel nil nil nil)) (epc-error . #s(deferred (lambda (args) (epc:log "SIG EPC-ERROR: %S" args) (apply (quote epc:handler-epc-error) #0 (epc:args args))) deferred:default-errorback deferred:default-cancel nil nil nil)) (return-error . #s(deferred (lambda (args) (epc:log "SIG RET-ERROR: %S" args) (apply (quote epc:handler-return-error) #0 (epc:args args))) deferred:default-errorback deferred:default-cancel nil nil nil)) (return . #s(deferred (lambda (args) (epc:log "SIG RET: %S" args) (apply (quote epc:handler-return) #0 (epc:args args))) deferred:default-errorback deferred:default-cancel nil nil nil)) (call . #s(deferred (lambda (args) (epc:log "SIG CALL: %S" args) (apply (quote epc:handler-called-method) #0 (epc:args args))) deferred:default-errorback deferred:default-cancel nil nil nil)))) nil nil nil)
+
+#+BEGIN_SRC emacs-lisp
+(deferred:$
+  (epc:call-deferred sylvia:epc-manager 'lookup '("cat"))
+  (deferred:nextc it
+    (lambda (x) (message "Return : %S" x))))
+#+END_SRC
+
+#+RESULTS:
+: #s(deferred (lambda (x) (message "Return : %S" x)) deferred:default-errorback deferred:default-cancel nil nil nil)
+
+#+BEGIN_SRC emacs-lisp
+(message "Return : %S" (epc:call-sync my-epc 'lookup '("tomato")))
+#+END_SRC
+
+#+RESULTS:
+: Return : (("T" "AH" "M" "EY" "T" "OW") ("T" "AH" "M" "AA" "T" "OW"))
+
+#+BEGIN_SRC emacs-lisp
+(message "Return : %S" (epc:call-sync my-epc 'infer '("tomato")))
+#+END_SRC
+
+#+RESULTS:
+: Return : ("T" "AA" "M" "AE" "T" "AA")

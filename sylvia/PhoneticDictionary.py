@@ -216,11 +216,14 @@ class PhoneticDictionary( object ):
         """
         ret = []
         word = None
-        if pronunciationOrWord.__class__ == str:
+        if isinstance( pronunciationOrWord, basestring ):
             word = sanitizeWord( pronunciationOrWord )
             pronunciations = self.findPronunciations( word )
         elif pronunciationOrWord.__class__ == list:
             pronunciations = [ pronunciationOrWord ]
+        else:
+            raise TypeError( "Can't interpret pronunciationOrWord of type {}.".format( pronunciationOrWord.__class__ ) )
+
         for pronunciation in pronunciations:
             mustEndWith = pronunciation[ [ isVowelSound( x ) for x in pronunciation ].index( True ) : ]
             if near:
@@ -235,11 +238,14 @@ class PhoneticDictionary( object ):
         """
         ret = []
         word = None
-        if pronunciationOrWord.__class__ == str:
+        if isinstance( pronunciationOrWord, basestring ):
             word = sanitizeWord( pronunciationOrWord )
             pronunciations = self.findPronunciations( word )
         elif pronunciationOrWord.__class__ == list:
             pronunciations = [ pronunciationOrWord ]
+        else:
+            raise TypeError( "Can't interpret pronunciationOrWord of type {}.".format( pronunciationOrWord.__class__ ) )
+
         for pronunciation in pronunciations:
             vowels = [ p for p in pronunciation if isVowelSound( p ) ]
             ret += self.regexSearch( ".*" + "#*".join( vowels ) + ".*" )

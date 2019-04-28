@@ -12,6 +12,7 @@ if __name__ == "__main__":
     parser.add_argument( "-d", "--dictionary_path", help="Point to an alternate dictionary file.")
     parser.add_argument( "-w", "--popularity_path", help="Point to an alternate popularity file.")
     parser.add_argument( "-c", "--command", help="Run a one-off command." )
+    parser.add_argument( "-e", "--emacs_server", action="store_true", help="Start Emacs RPC Server" )
     args = parser.parse_args()
 
     #
@@ -32,6 +33,14 @@ if __name__ == "__main__":
     else:
         pd = loadDefaultPhoneticDictionary()
 
+    #
+    # Create inference engine
+    #
+    pi = PronunciationInferencer()
+
+    #
+    # Create the console
+    #
     console = SylviaConsole()
     console.setPhoneticDictionary( pd )
 
@@ -40,6 +49,11 @@ if __name__ == "__main__":
         # Run a single command
         #
         console.onecmd( args.command )
+    elif args.emacs_server:
+        #
+        # Start emacs server
+        #
+        startEpcServer( pd, pi )
     else:
         #
         # Interactive console
