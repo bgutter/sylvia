@@ -48,12 +48,13 @@ A major mode for working with text phonetically.
     (when (sylvia:mode-p)
       (sylvia:compose-current-buffer)
       (sylvia:echo-phonemes-at-point)
-      (sylvia:update-syllable-margins)))
+      (sylvia:update-syllable-margins)
+      ))
 
 (defun sylvia:compose-current-buffer ()
     (interactive)
     "Update contents of buffer into Sylvia."
-    (sylvia:compose-buffer (buffer-name)))
+    (sylvia:update-poem (buffer-name)  (lambda (x))))
 #+END_SRC
 
 #+RESULTS:
@@ -63,18 +64,25 @@ A major mode for working with text phonetically.
 
 #+BEGIN_SRC emacs-lisp
   (defun sylvia:echo-phonemes-at-point ()
-    "Show the phonemes."
+    "Display phonetic representation of word at point in the echo area."
     (when (null (current-message))
       (let*
           ((message-log-max nil)
-           (word          (thing-at-point 'word 'no-properties))
-           (phoneme-reprs (and word (sylvia:as-phonemes word))))
-        (when phoneme-reprs
-          (message (concat word ": " (string-join phoneme-reprs "   ")))))))
+           (word          (thing-at-point 'word 'no-properties)))
+        (when word
+          (sylvia:lookup word (sylvia:--echo-phonemes-at-point--deferred-generator word))))))
+
+  (defun sylvia:--echo-phonemes-at-point--deferred-generator (word)
+    "Deferred callback generator for `sylvia:echo-phonemes-at-point'"
+    (lexical-let
+        ((captured-word word))
+      #'(lambda (phoneme-reprs)
+          (when phoneme-reprs
+            (message "%s: %s" captured-word phoneme-reprs)))))
 #+END_SRC
 
 #+RESULTS:
-: sylvia:echo-phonemes-at-point
+: sylvia:--echo-phonemes-at-point--deferred-generator
 
 ** Syllable Counts
 
@@ -82,6 +90,10 @@ A major mode for working with text phonetically.
   (defvar sylvia:syllable-count-overlays nil)
 
   (defun sylvia:update-syllable-margins ()
+    "Update left margin to show syllable counts."
+    (sylvia:poem-syllable-counts #'sylvia:--update-syllable-margins--deferred))
+
+  (defun sylvia:--update-syllable-margins--deferred (sylcounts)
     (interactive)
     "Update left margin to show syllable counts."
     ;; ensure this is buffer-local (don't think I'm doing this right?)
@@ -91,14 +103,14 @@ A major mode for working with text phonetically.
       (delete-overlay ov))
     ;; add new overlays
     (save-excursion
-      (let
+      (let*
           ((win (get-buffer-window (current-buffer)))
-           (sylcounts (sylvia:syllable-counts (buffer-name))))
+           (sylcounts (-slice sylcounts (- (line-number-at-pos (window-start win)) 1))))
         (goto-char (window-start win))
         (while (not (eobp))
           (let*
               ((ov     (make-overlay (point) (point)))
-               (cnt    (first sylcounts))
+               (cnt    (number-to-string (first sylcounts)))
                (cntstr (if (> (string-to-number cnt) 0) cnt "")))
             (push ov sylvia:syllable-count-overlays)
             (overlay-put ov 'before-string (propertize " " 'display `((margin left-margin) ,cntstr)))
@@ -108,12 +120,10 @@ A major mode for working with text phonetically.
 #+END_SRC
 
 #+RESULTS:
-: sylvia:update-syllable-margins
+: sylvia:--update-syllable-margins--deferred
 
 
 * Glue Code
-
-** Lookup or Infer
 
 #+BEGIN_SRC emacs-lisp
 (defun sylvia:lookup-or-infer (word)
@@ -122,14 +132,7 @@ A major mode for working with text phonetically.
       ((lookup   (sylvia:lookup word))
        (phonemes (if (> (length lookup) 0) lookup (sylvia:infer word))))
     phonemes))
-#+END_SRC
 
-#+RESULTS:
-: sylvia:lookup-or-infer
-
-** As Phonemes
-
-#+BEGIN_SRC emacs-lisp
 (defun sylvia:as-phonemes (string)
   "Convert this line of text to phonemes."
   (let
