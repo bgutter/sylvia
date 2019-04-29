@@ -75,6 +75,26 @@
   "Find rhymes for a word. If callback is given, the call is async."
   (sylvia:--epc-sync-or-async 'rhyme `(,word ,(symbol-name rhyme-level)) callback))
 
+(defun sylvia:regex (phoneme-regex &optional callback)
+  "Search for words whose pronunciation matches the given phoneme-regex.
+Assume a typical Python regular expression, with the following additions:
+
+  * # matches any consonant phoneme
+  * @ matches any vowel phoneme
+  * % matches any syllable (equivalent to #*@#*)
+  * Whitespace is irrelevant and will be removed, but must be used to separate
+    consecutive phoneme literals.
+  * See cmudict documentation for list of phoneme literals.
+  * Full sequence matching is done by default. That is, we automatically add '^'
+    to the start of the regex, and '$' at the end. Prepend or append '.*' to your
+    regex to override this behavior.
+
+Try it out:
+  regex S IH #*V#* % AH
+
+If callback is given, the call is async."
+  (sylvia:--epc-sync-or-async 'regex `(,phoneme-regex) callback))
+
 (defun sylvia:update-poem (&optional buffer-name callback)
   "Update Sylvia instance with buffer contents. If callback is given, the call is async."
   (let*
@@ -232,6 +252,8 @@ With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
           (kill-new (downcase rhyme))
           (message "Pushed %S onto the kill-ring." rhyme))
       (message "Nothing at point!"))))
+
+;; TODO
 
 (provide 'sylvia)
 ;;; sylvia.el ends here
