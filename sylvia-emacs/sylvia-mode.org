@@ -8,26 +8,45 @@ A major mode for working with text phonetically.
 ** Setup
 
 #+BEGIN_SRC emacs-lisp
+(defvar sylvia-mode-hook nil
+  "Hooks to be run when sylvia-mode is invoked.")
+
+(defvar sylvia-mode-map
+  (let ((map (make-keymap)))
+    (define-key map (kbd "C-c C-r") 'sylvia:copy-rhyme-at-point-as-kill)
+    map)
+  "Keymap for sylvia-mode.")
+
+(defvar sylvia-mode-syntax-table
+  (let ((st (make-syntax-table)))
+    (modify-syntax-entry ?' "w" st) ;; apostrophes are part of words
+    st)
+  "Syntax table for sylvia-mode")
+
 (defvar sylvia:idle-timer nil)
 (defvar sylvia:idle-delay 0.5)
+(make-variable-buffer-local 'sylvia:idle-timer)
 
-(defun sylvia-mode (&optional enabled)
+(defun sylvia-mode ()
   "Major mode for editing text with a focus on phonetic values."
   (interactive)
-  (let
-      ((enabled (or enabled (if (eq major-mode 'sylvia-mode) 0 1))))
-    (when (> enabled 0)
-      (sylvia:setup))))
+  (sylvia:setup))
 
 (defun sylvia:setup ()
   "Configure sylvia-mode"
   (interactive)
+  (kill-all-local-variables)
   (setq major-mode 'sylvia-mode)
-  (make-local-variable 'sylvia:idle-timer)
+  (setq mode-name "Sylvia")
+  (set-syntax-table sylvia-mode-syntax-table)
+  (use-local-map sylvia-mode-map)
   (when sylvia:idle-timer
       (cancel-timer sylvia:idle-timer))
   (add-hook 'post-command-hook 'sylvia:post-command-actions nil t)
-  (setq sylvia:idle-timer (run-with-idle-timer sylvia:idle-delay t 'sylvia:idle-actions)))
+  (setq sylvia:idle-timer (run-with-idle-timer sylvia:idle-delay t 'sylvia:idle-actions))
+  (run-hooks 'sylvia-mode-hook))
+
+(provide 'sylvia-mode)
 
 (defun sylvia:cleanup ()
   "Clean up sylvia-mode"
@@ -48,8 +67,7 @@ A major mode for working with text phonetically.
     (when (sylvia:mode-p)
       (sylvia:compose-current-buffer)
       (sylvia:echo-phonemes-at-point)
-      (sylvia:update-syllable-margins)
-      ))
+      (sylvia:update-syllable-margins)))
 
 (defun sylvia:compose-current-buffer ()
     (interactive)
@@ -156,27 +174,7 @@ NOTE: Works for built-in and helm, but ivy still sorts."
 #+RESULTS:
 : sylvia:copy-rhyme-at-point-as-kill
 
-* Glue Code
 
-#+BEGIN_SRC emacs-lisp
-(defun sylvia:lookup-or-infer (word)
-  "Lookup phonemes, infer if failed to do so."
-  (let*
-      ((lookup   (sylvia:lookup word))
-       (phonemes (if (> (length lookup) 0) lookup (sylvia:infer word))))
-    phonemes))
+* Resources
 
-(defun sylvia:as-phonemes (string)
-  "Convert this line of text to phonemes."
-  (let
-      ((phonemes (sylvia:lookup-or-infer (first (split-string string)))))
-    (and phonemes (mapcar (lambda (x) (string-join x " ") ) phonemes))))
-#+END_SRC
-
-#+RESULTS:
-: sylvia:as-phonemes
-
-
-
-
-
+[[https://www.emacswiki.org/emacs/ModeTutorial][Defining a Major Mode]]

@@ -10,6 +10,7 @@ An EPC interface between Emacs Lisp and Sylvia
 #+BEGIN_SRC emacs-lisp
 (require 'epc)
 (defvar sylvia:epc-manager nil "EPC Manager Object for Sylvia.")
+(make-variable-buffer-local 'sylvia:epc-manager)
 #+END_SRC
 
 #+RESULTS:
