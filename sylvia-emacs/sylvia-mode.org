@@ -36,6 +36,7 @@ A major mode for working with text phonetically.
   "Configure sylvia-mode"
   (interactive)
   (kill-all-local-variables)
+  (sylvia:start-epc)
   (setq major-mode 'sylvia-mode)
   (setq mode-name "Sylvia")
   (set-syntax-table sylvia-mode-syntax-table)
@@ -85,8 +86,7 @@ A major mode for working with text phonetically.
     "Display phonetic representation of word at point in the echo area."
     (when (null (current-message))
       (let*
-          ((message-log-max nil)
-           (word          (thing-at-point 'word 'no-properties)))
+          ((word          (thing-at-point 'word 'no-properties)))
         (when word
           (sylvia:lookup word (sylvia:--echo-phonemes-at-point--deferred-generator word))))))
 
@@ -96,7 +96,8 @@ A major mode for working with text phonetically.
         ((captured-word word))
       #'(lambda (phoneme-reprs)
           (when phoneme-reprs
-            (message "%s: %s" captured-word phoneme-reprs)))))
+            (let ((message-log-max nil))
+              (message "%s: %s" captured-word phoneme-reprs))))))
 #+END_SRC
 
 #+RESULTS:
@@ -130,7 +131,7 @@ A major mode for working with text phonetically.
               ((ov     (make-overlay (point) (point)))
                (cnt    (format "% 4s" (number-to-string (first sylcounts))))
                (cntstr (if (> (string-to-number cnt) 0) cnt "    ")))
-            (put-text-property 0 4 'face '('bold (foreground-color . "#FFFF00")) cntstr)
+            (put-text-property 0 4 'face '(bold (foreground-color . "#FFFF00") cntstr)
             (push ov sylvia:syllable-count-overlays)
             (overlay-put ov 'before-string (propertize " " 'display `((margin left-margin) ,cntstr)))
             (setq sylcounts (cdr sylcounts)))
