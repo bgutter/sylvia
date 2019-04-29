@@ -166,6 +166,7 @@ The basic framework for the major-mode.
 (defvar sylvia-mode-map
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c C-r") 'sylvia:copy-rhyme-at-point-as-kill)
+    (define-key map (kbd "C-c C-q") 'sylvia:copy-regex-query-result-as-kill)
     map)
   "Keymap for sylvia-mode.")
 
@@ -222,6 +223,9 @@ The basic framework for the major-mode.
       (sylvia:echo-phonemes-at-point)
       (sylvia:update-syllable-margins)))
 #+END_SRC
+
+#+RESULTS:
+: sylvia:post-command-actions
 
 *** Buffer Change Processing
 
@@ -303,16 +307,6 @@ Upon command invocation, offer rhymes for whatever's at point via
 completing-read, and place the result into the kill-ring.
 
 #+BEGIN_SRC emacs-lisp
-(defun my-presorted-completion-table (completions)
-  "Bypass completing-read's desire to sort items we send. Modified with lexical let from here:
-https://emacs.stackexchange.com/questions/8115/make-completing-read-respect-sorting-order-of-a-collection
-NOTE: Works for built-in and helm, but ivy still sorts."
-  (lexical-let ((captured-completions completions))
-    (lambda (string pred action)
-      (if (eq action 'metadata)
-          `(metadata (display-sort-function . ,#'identity))
-        (complete-with-action action captured-completions string pred)))))
-
 (defun sylvia:copy-rhyme-at-point-as-kill (prefix-arg)
   "Interactively list rhymes for thing at point, placing selected word into kill-ring.
 Without prefix arg, use Sylvia's default rhyme-level.
@@ -328,16 +322,28 @@ With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
        (rhyme                    (and word (completing-read
                                    (format "[%s] Rhymes for %s: " (symbol-name rhyme-level) word)
                                    (my-presorted-completion-table (sylvia:rhyme word rhyme-level))))))
-    (if rhyme
-        (progn
-          (kill-new (downcase rhyme))
-          (message "Pushed %S onto the kill-ring." rhyme))
-      (message "Nothing at point!"))))
+    (sylvia:--loudly-try-push-kill-ring rhyme)))
 #+END_SRC
 
-*** Phoneme Query
+*** Phonetic Regex Search
 
-TODO
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:copy-regex-query-result-as-kill ()
+  "Interactively search for words using a phonetic regex.
+See documentation for `sylvia:regex' for full details."
+  (interactive)
+  (let*
+      ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
+       (phoneme-regex (read-string "Enter Phoneme Regex: "))
+       (result        (completing-read
+                        (format "Words matching pattern %s: " phoneme-regex)
+                        (my-presorted-completion-table (sylvia:regex phoneme-regex)))))
+    (sylvia:--loudly-try-push-kill-ring result)))
+#+END_SRC
+
+**** Interactive version WIP
+TODO: Find a way to do it realtime/interactively with completing-read.
+Tempted to just switch to ivy directly.
 
 #+BEGIN_SRC
 (defun sylvia:phoneme-query (&optional initial-input)
@@ -362,6 +368,36 @@ of the word at point preloaded.
 
 #+BEGIN_SRC emacs-lisp
 ;; TODO
+#+END_SRC
+
+*** Utility
+
+Generic utility functions.
+
+**** Avoid resorting items in completing-read
+
+#+BEGIN_SRC emacs-lisp
+(defun my-presorted-completion-table (completions)
+  "Bypass completing-read's desire to sort items we send. Modified with lexical let from here:
+https://emacs.stackexchange.com/questions/8115/make-completing-read-respect-sorting-order-of-a-collection
+NOTE: Works for built-in and helm, but ivy still sorts."
+  (lexical-let ((captured-completions completions))
+    (lambda (string pred action)
+      (if (eq action 'metadata)
+          `(metadata (display-sort-function . ,#'identity))
+        (complete-with-action action captured-completions string pred)))))
+#+END_SRC
+
+**** Placing items in kill-ring
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:--loudly-try-push-kill-ring (entry)
+  "If entry is non-nil, place it into the kill-ring and announce it. Else, complain."
+  (if entry
+      (progn
+        (kill-new (downcase entry))
+        (message "Pushed %S onto the kill-ring." entry))
+    (message "Nothing at point!")))
 #+END_SRC
 
 ** End file

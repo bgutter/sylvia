@@ -112,6 +112,7 @@ If callback is given, the call is async."
 (defvar sylvia-mode-map
   (let ((map (make-keymap)))
     (define-key map (kbd "C-c C-r") 'sylvia:copy-rhyme-at-point-as-kill)
+    (define-key map (kbd "C-c C-q") 'sylvia:copy-regex-query-result-as-kill)
     map)
   "Keymap for sylvia-mode.")
 
@@ -222,16 +223,6 @@ If callback is given, the call is async."
       (forward-line))
     (set-window-margins win 4))))
 
-(defun my-presorted-completion-table (completions)
-  "Bypass completing-read's desire to sort items we send. Modified with lexical let from here:
-https://emacs.stackexchange.com/questions/8115/make-completing-read-respect-sorting-order-of-a-collection
-NOTE: Works for built-in and helm, but ivy still sorts."
-  (lexical-let ((captured-completions completions))
-    (lambda (string pred action)
-      (if (eq action 'metadata)
-          `(metadata (display-sort-function . ,#'identity))
-        (complete-with-action action captured-completions string pred)))))
-
 (defun sylvia:copy-rhyme-at-point-as-kill (prefix-arg)
   "Interactively list rhymes for thing at point, placing selected word into kill-ring.
 Without prefix arg, use Sylvia's default rhyme-level.
@@ -247,13 +238,39 @@ With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
        (rhyme                    (and word (completing-read
                                    (format "[%s] Rhymes for %s: " (symbol-name rhyme-level) word)
                                    (my-presorted-completion-table (sylvia:rhyme word rhyme-level))))))
-    (if rhyme
-        (progn
-          (kill-new (downcase rhyme))
-          (message "Pushed %S onto the kill-ring." rhyme))
-      (message "Nothing at point!"))))
+    (sylvia:--loudly-try-push-kill-ring rhyme)))
+
+(defun sylvia:copy-regex-query-result-as-kill ()
+  "Interactively search for words using a phonetic regex.
+See documentation for `sylvia:regex' for full details."
+  (interactive)
+  (let*
+      ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
+       (phoneme-regex (read-string "Enter Phoneme Regex: "))
+       (result        (completing-read
+                        (format "Words matching pattern %s: " phoneme-regex)
+                        (my-presorted-completion-table (sylvia:regex phoneme-regex)))))
+    (sylvia:--loudly-try-push-kill-ring result)))
 
 ;; TODO
+
+(defun my-presorted-completion-table (completions)
+  "Bypass completing-read's desire to sort items we send. Modified with lexical let from here:
+https://emacs.stackexchange.com/questions/8115/make-completing-read-respect-sorting-order-of-a-collection
+NOTE: Works for built-in and helm, but ivy still sorts."
+  (lexical-let ((captured-completions completions))
+    (lambda (string pred action)
+      (if (eq action 'metadata)
+          `(metadata (display-sort-function . ,#'identity))
+        (complete-with-action action captured-completions string pred)))))
+
+(defun sylvia:--loudly-try-push-kill-ring (entry)
+  "If entry is non-nil, place it into the kill-ring and announce it. Else, complain."
+  (if entry
+      (progn
+        (kill-new (downcase entry))
+        (message "Pushed %S onto the kill-ring." entry))
+    (message "Nothing at point!")))
 
 (provide 'sylvia)
 ;;; sylvia.el ends here
