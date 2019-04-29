@@ -1,5 +1,7 @@
 #+TITLE: sylvia-mode
 
+[[./basic-usage.gif]]
+
 =sylvia-mode= for Emacs is an environment for composing lyrics and poetry. Powered by Sylvia, it provides contextual hints and various search tools to help you realize your artistic vision.
 
 Implemented Features:
