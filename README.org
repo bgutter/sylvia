@@ -2,6 +2,9 @@
 
 Search pronunciations in the CMU Pronouncing Dictionary using a reglular-expression like syntax. Input-format regular expressions are lightly preprocessed into Python-format regular expressions, and then mapped over an encoded version of cmudict. Results are sorted by popularity using Peter Norvig's list of word popularities derived from Google's N-Gram dataset.
 
+* Here for the Emacs library?
+You can skip this and jump directly into the [[./sylvia-emacs/README.org][sylvia-mode README]]!
+
 * Installation
 
 #+BEGIN_SRC sh
@@ -244,7 +247,6 @@ sylvia> popularity green
 sylvia> popularity teutonic
 301907
 #+END_SRC
-
 
 * Experimental Functionality
 

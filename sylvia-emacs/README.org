@@ -1,0 +1,57 @@
+#+TITLE: sylvia-mode
+
+=sylvia-mode= for Emacs is an environment for composing lyrics and poetry. Powered by Sylvia, it provides contextual hints and various search tools to help you realize your artistic vision.
+
+Implemented Features:
+- *Syllable counts* in window margin
+- Interactive selection of words which *rhyme with the word-at-point*
+- Interactive selection of words matching a *phoneme-regex*
+- Display *phonemes of word-at-point* in the echo area
+- Ability to infer the pronunciation of words which are not in the dictionary
+
+Planned Features:
+- Preload phoneme-regex query with phonemes for words-in-region
+- Find words which rhyme with words-in-region
+- Syntax-highlighting for regions in current stanza which syllabically correspond to word-at-point
+- Sub-word selection of phonemes via-region, using a char-to-phoneme alignment engine
+
+* Installation
+
+Using =sylvia-mode= is easy -- just install the Python package and the Emacs package.
+
+** Emacs Package
+
+TODO Insert MELPA tutorial
+
+#+BEGIN_SRC
+M-x package-install TODOTODOTODO
+#+END_SRC
+
+** Python Package
+
+TODO Link to [[../README.org][Sylvia package README]] for installation of the Python module.
+
+* Quickstart
+
+Place some stuff in your =.emacs=.
+
+#+BEGIN_SRC emacs-lisp
+(require 'sylvia)
+#+END_SRC
+
+Then, open a new buffer or text file and type =M-x sylvia-mode=.
+
+* Features
+
+There's a keymap
+
+| Key     | Function                               | Description                                                                       |
+|---------+----------------------------------------+-----------------------------------------------------------------------------------|
+| C-c C-r | sylvia:copy-rhyme-at-point-as-kill     | List words which rhyme with the word at point. Copy collection to the kill-ring.  |
+| C-c C-q | sylvia:copy-regex-query-result-as-kill | List words which match the given phoneme-regex. Copy collection to the kill-ring. |
+
+** sylvia:copy-rhyme-at-point-as-kill
+TODO Describe the prefix args
+
+** sylvia:copy-regex-query-result-as-kill
+TODO blah
