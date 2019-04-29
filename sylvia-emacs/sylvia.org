@@ -294,12 +294,17 @@ NOTE: Works for built-in and helm, but ivy still sorts."
         (complete-with-action action captured-completions string pred)))))
 
 (defun sylvia:copy-rhyme-at-point-as-kill (prefix-arg)
-  "Interactively list rhymes for thing at point, placing selected word into kill-ring."
+  "Interactively list rhymes for thing at point, placing selected word into kill-ring.
+Without prefix arg, use Sylvia's default rhyme-level.
+With C-u prefix, use Sylvia's 'loose' rhyme-level.
+With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
   (interactive "P")
   (let*
       ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
        (word                     (thing-at-point 'word 'no-properties))
-       (rhyme-level              (if (equal prefix-arg '(4)) 'loose 'perfect))
+       (rhyme-level              (cond ((equal prefix-arg '(4))  'loose)
+                                       ((equal prefix-arg '(16)) 'perfect)
+                                       (t                        'default)))
        (rhyme                    (and word (completing-read
                                    (format "[%s] Rhymes for %s: " (symbol-name rhyme-level) word)
                                    (my-presorted-completion-table (sylvia:rhyme word rhyme-level))))))
