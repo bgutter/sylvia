@@ -152,6 +152,10 @@ If callback is given, the call is async."
 (defun sylvia:poem-syllable-counts (&optional callback)
   "Get syllable counts for current poem. If callback is given, the call is async."
   (sylvia:--epc-sync-or-async 'poem_syllable_counts `() callback))
+
+(defun sylvia:poem-phonemes-in-region (begin end &optional callback)
+  "Get phonemes in the associated region."
+  (sylvia:--epc-sync-or-async 'poem_phonemes_in_region `(,begin ,end) callback))
 #+END_SRC
 
 ** Major Mode
@@ -220,12 +224,9 @@ The basic framework for the major-mode.
     "Run after every command."
     (when (sylvia:mode-p)
       (sylvia:apply-buffer-changes)
-      (sylvia:echo-phonemes-at-point)
+      (sylvia:update-echo)
       (sylvia:update-syllable-margins)))
 #+END_SRC
-
-#+RESULTS:
-: sylvia:post-command-actions
 
 *** Buffer Change Processing
 
@@ -239,19 +240,42 @@ cached version.
     (sylvia:update-poem (buffer-name)  (lambda (x))))
 #+END_SRC
 
-*** Echo Phonemes at Point
+*** Echo area information
 
 Uses the echo area to display the phonemes for the word at point when
-idle.
+idle. If region is active, show those phonemes instead.
 
 #+BEGIN_SRC emacs-lisp
-(defun sylvia:echo-phonemes-at-point ()
-  "Display phonetic representation of word at point in the echo area."
+(defun sylvia:update-echo ()
+  "If region is active, display their phonemes in the echo area. Else,
+show phonemes for the word at point."
   (when (null (current-message))
-    (let*
-        ((word          (thing-at-point 'word 'no-properties)))
-      (when word
-        (sylvia:lookup word (sylvia:--echo-phonemes-at-point--deferred-generator word))))))
+    (if (use-region-p)
+        (sylvia:--echo-phonemes-in-region)
+      (sylvia:--echo-phonemes-at-point))))
+
+(defun sylvia:--echo-phonemes-in-region ()
+  "Display phonetic representation of the selected region in the echo area."
+  (sylvia:poem-phonemes-in-region
+    (1- (region-beginning)) ;; emacs buffers are 1-indexed
+    (1- (region-end))       ;; sylvia is 0-indexed
+    (sylvia:--echo-phonemes-in-region--deferred-generator
+      (buffer-substring-no-properties (region-beginning) (region-end)))))
+
+(defun sylvia:--echo-phonemes-in-region--deferred-generator (text)
+  "Deferred callback generator for `sylvia:echo-phonemes-in-region'"
+  (lexical-let
+      ((captured-text text))
+    #'(lambda (phoneme-reprs)
+        (when phoneme-reprs
+          (sylvia:--message-no-log "%s: %s" captured-text phoneme-reprs)))))
+
+(defun sylvia:--echo-phonemes-at-point ()
+  "Display phonetic representation of word at point in the echo area."
+  (let*
+      ((word (thing-at-point 'word 'no-properties)))
+    (when word
+      (sylvia:lookup word (sylvia:--echo-phonemes-at-point--deferred-generator word)))))
 
 (defun sylvia:--echo-phonemes-at-point--deferred-generator (word)
   "Deferred callback generator for `sylvia:echo-phonemes-at-point'"
@@ -259,8 +283,7 @@ idle.
       ((captured-word word))
     #'(lambda (phoneme-reprs)
         (when phoneme-reprs
-          (let ((message-log-max nil))
-            (message "%s: %s" captured-word phoneme-reprs))))))
+          (sylvia:--message-no-log "%s: %s" captured-word phoneme-reprs)))))
 #+END_SRC
 
 *** Syllable Count Margins
@@ -398,6 +421,24 @@ NOTE: Works for built-in and helm, but ivy still sorts."
         (kill-new (downcase entry))
         (message "Pushed %S onto the kill-ring." entry))
     (message "Nothing at point!")))
+#+END_SRC
+
+**** Writing to echo area
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:--message-no-log (&rest args)
+  "Write a message to the echo area, but keep it out of the messages buffer."
+  (let ((message-log-max nil))
+     (apply 'message args)))
+#+END_SRC
+
+**** Get phonemes in selected region
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:--region-phonemes ()
+  "Return a list of the phonemes covered by words in region. If a word has multiple possible pronunciations,
+choose the 'best' one. Returns a list of strings."
+  (sylvia:poem-phonemes-in-region (region-beginning) (region-end)))
 #+END_SRC
 
 ** End file

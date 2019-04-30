@@ -21,7 +21,7 @@ def startEpcServer( pd, pi ):
     from epc.server import EPCServer
 
     server = EPCServer(('localhost', 0))
-    poem = Poem( pd, "" )
+    poem = Poem( pd, pi, "" )
 
     # TODO!!!
     # Merge all of this with SylviaConsole in a
@@ -67,6 +67,10 @@ def startEpcServer( pd, pi ):
     @server.register_function
     def poem_syllable_counts():
         return poem.syllableCounts()
+
+    @server.register_function
+    def poem_phonemes_in_region( begin, end ):
+        return poem.phonemesInRegion( begin, end )
 
     server.print_port()
     server.serve_forever()

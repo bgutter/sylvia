@@ -413,6 +413,7 @@ class SylviaConsole( cmd.Cmd ):
           compose poem12
         """
         self.checkPd()
+        self.checkPi()
         args = self.tokenizeArgs( arg )
         if len( args ) > 1:
             self.errorMessage( "Bad number of arguments. Send the handle or nothing at all." )
@@ -430,7 +431,7 @@ class SylviaConsole( cmd.Cmd ):
                     break
                 contents.append(line)
             contents = "\n".join( contents )
-            self.poems[ handle ] = Poem( self.pd, contents )
+            self.poems[ handle ] = Poem( self.pd, self.pi, contents )
             print "\n\nSaved poem to", handle
 
     def do_load( self, arg ):
@@ -453,7 +454,7 @@ class SylviaConsole( cmd.Cmd ):
             else:
                 handle = self.generateNextHandle()
             with open( args[0], "r" ) as fin:
-                self.poems[ handle ] = Poem( self.pd, fin.read() )
+                self.poems[ handle ] = Poem( self.pd, self.pi, fin.read() )
                 print "\nSaved poem to", handle
 
     def do_show( self, arg ):
@@ -491,13 +492,27 @@ class SylviaConsole( cmd.Cmd ):
         """
         args = self.tokenizeArgs( arg )
         if len( args ) != 1:
-            self.errorMessage( "Need the name of the poem to map." )
+            self.errorMessage( "Need the name of the poem." )
         else:
             handle = args[0]
             if handle not in self.poems:
                 self.errorMessage( "Poem not found." )
             else:
                 print "\n", " ".join( [ str( x ) for x in self.poems[ handle ].syllableCounts() ] )
+
+    def do_phonemes_in_region( self, arg ):
+        """
+        Show the phonemes for a region of a poem.
+        """
+        args = self.tokenizeArgs( arg )
+        if len( args ) != 3:
+            self.errorMessage( "Need the name of the poem and start and stop indexes." )
+        else:
+            handle = args[0]
+            if handle not in self.poems:
+                self.errorMessage( "Poem not found." )
+            else:
+                print self.poems[ handle ].phonemesInRegion( int( args[1] ), int( args[2] ) )
 
     def do_test_infer( self, arg ):
         """
