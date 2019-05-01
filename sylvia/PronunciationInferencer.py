@@ -143,7 +143,7 @@ class PronunciationInferencer( object ):
             self.addRule( PronunciationRule( sequence=l+l, phonemes=p, priority=1 ) )
 
         #
-        #
+        # le$ becomes [ AH L ], like little, subtle, quibble...
         #
         self.addRule( PronunciationRule( sequence="le", phonemes=[ "AH", "L" ], alignEnd=True ) )
 
@@ -240,35 +240,29 @@ class PronunciationInferencer( object ):
         # Ambiguous: beather could be [ B IY DH ER ] or [ B EH DH ER ]
 
         #
-        #
+        # ew becomes [ UW ], like in spew, skewer, hewn, etc.
         #
         self.addRule( PronunciationRule( sequence="ew", phonemes=[ "UW" ], alignEnd=True ) )
 
         #
-        # AI + ( T or D ) becomes EY, but AI + ( r ) becomes EH
+        # air becomes [ EH R ], like in hair, bair, stairs
+        # ai, without an r, generally becomes EY
         #
+        self.addRule( PronunciationRule( sequence="air", phonemes=[ "EH", "R" ] ) )
 
         #
         # Phoneme sound type cases bags -- Z vs IH Z
         #
 
         #
-        # Alternativesx!! Sorted by liklihood
+        # ous$ -> [ AH S ]
         #
-        # ML component:
-        #
-        # Look at potential syllabifications
-        # Find those syllables in other words
-        # Vote
-        # ????
-        #
-
         self.addRule( PronunciationRule( sequence="ous", phonemes=[ "AH", "S" ], alignEnd=True ) )
         self.addRule( PronunciationRule( sequence="a", phonemes=[ "AH" ], alignEnd=True ) )
 
-        #if len( word ) >= 2 and word[-1] == 's' and word[-2] != 's' and word[-2] in CONSONANT_LETTERS:
-        #    return self._inferPronunciationPartial( word[:-1], 0, len( word ) - 1 ) + [ "Z" if word[-2] is not 't' else "S" ]
-
+        #
+        # th -> [ DH ]
+        #
         self.addRule( PronunciationRule( sequence="th", phonemes=[ "DH" ], alignEnd=True ) )
 
     def _pronouncePartial( self, word, startIdx, endIdx ):
