@@ -130,6 +130,14 @@ If callback is given, the call is async."
   "Face used to decorate syllable counts in window margin."
   :group 'sylvia)
 
+(defface sylvia:vowel-face '((t :foreground "HotPink1"))
+  "Face used to decorate vowel phonemes."
+  :group 'sylvia)
+
+(defface sylvia:consonant-face '((t :foreground "cornflower blue"))
+  "Face used to decorate consonant."
+  :group 'sylvia)
+
 (defvar sylvia:idle-timer nil)
 (defvar sylvia:idle-delay 0.5)
 (make-variable-buffer-local 'sylvia:idle-timer)
@@ -213,7 +221,16 @@ show phonemes for the word at point."
       ((captured-text text))
     #'(lambda (phoneme-reprs)
         (when phoneme-reprs
-          (sylvia:--message-no-log "%s: %s" captured-text phoneme-reprs)))))
+          (let*
+              ((fontified-phoneme-reprs (mapcar #'sylvia:--fontify-phonemes--echo phoneme-reprs))
+               (phoneme-str             (string-join fontified-phoneme-reprs " ")))
+          (sylvia:--message-no-log "%s: %s" captured-text phoneme-str))))))
+
+(defun sylvia:--fontify-phonemes--echo (phoneme)
+  "Apply face to phoneme prior for use in echo area."
+  (if (sylvia:--phoneme-vowel-p phoneme)
+      (propertize phoneme 'face 'sylvia:vowel-face)
+    (propertize phoneme 'face 'sylvia:consonant-face)))
 
 (defvar sylvia:syllable-count-overlays nil)
 (make-variable-buffer-local 'sylvia:syllable-count-overlays)
@@ -305,6 +322,10 @@ NOTE: Works for built-in and helm, but ivy still sorts."
   "Return a list of the phonemes covered by words in region. If a word has multiple possible pronunciations,
 choose the 'best' one. Returns a list of strings."
   (sylvia:poem-phonemes-in-region (1- (region-beginning)) (1- (region-end))))
+
+(defun sylvia:--phoneme-vowel-p (phoneme)
+  "Is this a vowel phoneme?"
+  (member phoneme (mapcar #'symbol-name '(AA AE AH AO AW AY EH ER EY IH IY OW OY UH UW))))
 
 (provide 'sylvia)
 ;;; sylvia.el ends here

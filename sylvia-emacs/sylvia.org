@@ -184,6 +184,14 @@ The basic framework for the major-mode.
   "Face used to decorate syllable counts in window margin."
   :group 'sylvia)
 
+(defface sylvia:vowel-face '((t :foreground "HotPink1"))
+  "Face used to decorate vowel phonemes."
+  :group 'sylvia)
+
+(defface sylvia:consonant-face '((t :foreground "cornflower blue"))
+  "Face used to decorate consonant."
+  :group 'sylvia)
+
 (defvar sylvia:idle-timer nil)
 (defvar sylvia:idle-delay 0.5)
 (make-variable-buffer-local 'sylvia:idle-timer)
@@ -281,11 +289,20 @@ show phonemes for the word at point."
       ((captured-text text))
     #'(lambda (phoneme-reprs)
         (when phoneme-reprs
-          (sylvia:--message-no-log "%s: %s" captured-text phoneme-reprs)))))
+          (let*
+              ((fontified-phoneme-reprs (mapcar #'sylvia:--fontify-phonemes--echo phoneme-reprs))
+               (phoneme-str             (string-join fontified-phoneme-reprs " ")))
+          (sylvia:--message-no-log "%s: %s" captured-text phoneme-str))))))
+
+(defun sylvia:--fontify-phonemes--echo (phoneme)
+  "Apply face to phoneme prior for use in echo area."
+  (if (sylvia:--phoneme-vowel-p phoneme)
+      (propertize phoneme 'face 'sylvia:vowel-face)
+    (propertize phoneme 'face 'sylvia:consonant-face)))
 #+END_SRC
 
 #+RESULTS:
-: sylvia:--echo-phonemes-at-point
+: sylvia:--fontify-phonemes--echo
 
 *** Syllable Count Margins
 
@@ -441,6 +458,17 @@ NOTE: Works for built-in and helm, but ivy still sorts."
 choose the 'best' one. Returns a list of strings."
   (sylvia:poem-phonemes-in-region (1- (region-beginning)) (1- (region-end))))
 #+END_SRC
+
+**** General information about phonemes
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:--phoneme-vowel-p (phoneme)
+  "Is this a vowel phoneme?"
+  (member phoneme (mapcar #'symbol-name '(AA AE AH AO AW AY EH ER EY IH IY OW OY UH UW))))
+#+END_SRC
+
+#+RESULTS:
+: nil
 
 ** End file
 #+BEGIN_SRC emacs-lisp
