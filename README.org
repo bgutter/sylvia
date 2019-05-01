@@ -120,9 +120,9 @@ T AH M EY T OW     T AH M AA T OW
 
 Sylvia can act as a rhyming dictionary, returning words which rhyme with a given word. There are three "rhyme levels", which define how rhymes are determined.
 
-1. *loose* is the most permissive model. It returns a list of words which contain, as a subsequence, the same vowels as the given word. Consonant sounds are ignored. It tends to return many, many results and is rarely useful.
-2. *default* returns words which end with the same sounds as the given word, though other consonant sounds can be interspersed. The "end" of the given word is defined to be the first vowel phoneme of the given word's pronunciation.
-3. *perfect* is the same as default, but does not allow unmatched consonants.
+1. *perfect* lists all words which contain the same sequence of phonemes as the given word, including and following the first vowel in the given pronunciation. Before that vowel, the matched words can contain any sounds.
+2. *default* is the same as perfect, except that additional consonant sounds can be interspersed between the matched sequence phonemes.
+3. *loose* is similar, except it ignores consonant sounds entirely.
 
 Use of this command is as follows:
 
@@ -136,35 +136,56 @@ There are plans to improve these models by matching phonemes based on their voca
 
 *** Examples
 
-List words which rhyme with "shaping", using the default algorithm.
+List words which rhyme with "chatter", using the perfect algorithm.
 
 #+BEGIN_SRC
+sylvia> rhyme perfect chatter
+Matter             Latter             Batter             Mater              Platter            Scatter            Flatter            
+Shatter            Hatter             Splatter           Fatter             Patter             Antimatter         Clatter            
+Spatter            Schlatter          Blatter            Natter             Sater              Satter             Slatter            
+Tatter             Mcphatter          Chitterchatter     Smatter            Vanatter           Vannater           Vatter             
+Vannatter          Mcfatter           Wildcatter
 sylvia> rhyme shaping
-Landscaping     Escaping        Gaping          Taping          Scraping        Raping          
-Reshaping       Videotaping     Stapling        Draping         Tapings         Aping           
-Scrapings       Traipsing       
 #+END_SRC
 
-Find all rhymes for "afterall" using the loose algorithm.
+...using the default algorithm...
 
 #+BEGIN_SRC
-sylvia> rhyme loose afterall
-Mastercard        Aftermarket       Abercrombie       Adirondack        Laparoscopic      Alvarado          
-Aftershock        Pavarotti         Laparoscopy       Afterthought      Kasparov          Algernon          
-Aharon            Aftershocks       Khabarovsk        Amerada           Afterthoughts     Vandermark        
-Zakharov          Scattershot       Ameron            Vanderwal         Hammerlock        Averof            
-Rasterop          Afflerbach        Rasterops         Mastercard's      Mazzorana         Vanderlaan        
-Bankvermont       Vanderschaaf      Vandermolen       Ameron's          Vanderwall        Pavarotti's       
-Mastercards       Aftermarkets      Caterwaul         Kadrmas           
+sylvia> rhyme chatter        
+After                  Chapter                Matter                 Master                 Factors                Factor                 
+Pattern                Faster                 Matters                Webmaster              Patterns               Adapter                
+Contractor             Contractors            Disaster               Actor                  Masters                Latter                 
+Chapters               Actors                 Adapters               Lancaster              Saturn                 Adaptor                
+Pastor                 Thereafter             Tractor                Scattered              Disasters              Ticketmaster           
+Napster                Laughter               Reactor                Adaptors               Baxter                 Stratford              
+Blaster                Lantern                Bastard                Maxtor                 Tractors               Shattered              
+Plaster                Hereafter              Subchapter             Batter                 Broadcasters           Antwerp                
+Raptor                 Mater                  Platter                Scatter                Hamster                Raster                 
+Subcontractor          Reactors               Pastors                Subcontractors         Broadcaster            Mastered
+... many more...
 #+END_SRC
 
-Find all rhymes for "cranky" using the perfect algorithm.
+...and using the loose algorithm.
 
 #+BEGIN_SRC
-sylvia> rhyme perfect cranky
-Yankee          Frankie         Franke          Hanky           Panky           Francie         
-Sankey          Lanky           Hankey          Sankei          Yankey          Branki          
-Pankki          Stankey         Postipankki     
+sylvia> rhyme loose chatter
+After                  Standard               Password               Chapter                Standards              Rather                 
+Matter                 Cancer                 Answer                 Master                 Transfer               Answers                
+Factors                Factor                 Pattern                Faster                 Matters                Manner                 
+Webmaster              Patterns               Hampshire              Adapter                Contractor             Banner                 
+Contractors            Alexander              Capture                Disaster               Actor                  Masters                
+Traveler               Latter                 Albert                 Chapters               Packard                Answered               
+Scanner                Bachelor               Actors                 Transfers              Adverse                Amber                  
+Tracker                Transferred            Planner                Hacker                 Commander              Adapters               
+Scanners               Manufactured           Stanford               Manufacture            Anchor                 Gathered               
+Travelers              Captured               Grammar                Hazard                 Anger                  Gather                 
+Lancaster              Hammer                 Manor                  Programmer             Hazards                Bradford               
+Madagascar             Saturn                 Banners                Passwords              Adaptor                Pastor                 
+Hamburg                Ladder                 Flashers               Programmers            Planners               Thereafter             
+Chancellor             Frankfurt              Tractor                Wagner                 Hackers                Scattered              
+Ballard                Disasters              Handler                Chandler               Sanders                Ticketmaster           
+Napster                Banker                 Dancer                 Dancers                Jasper                 Laughter 
+...many, many more...
 #+END_SRC
 
 ** infer

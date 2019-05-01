@@ -350,14 +350,9 @@ class SylviaConsole( cmd.Cmd ):
                     self.checkPi()
                     pronunciation = self.pi.pronounce( word )
                     query = pronunciation
-            if level == "loose":
-                results = self.pd.getVowelMatches( query )
-            elif level == "default":
-                results = self.pd.getRhymes( query, near=True )
-            elif level == "perfect":
-                results = self.pd.getRhymes( query, near=False )
-            else:
-                self.errorMessage( "Unknown rhyme level. Type 'help rhyme' for details." )
+
+            results = self.pd.regexSearch( self.pd.getRhymeRegex( query, level ) )
+            results = [ r for r in results if r.lower() != word.lower() ]
             if results:
                 self.printWords( results )
 

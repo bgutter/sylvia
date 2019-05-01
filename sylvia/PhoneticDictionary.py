@@ -174,7 +174,19 @@ class PhoneticDictionary( object ):
 
         Regex will automatically be wrapped in '^' and '$'. Use '.*' before and after
         query if you do not wish to align the match to start and/or end.
+
+        If you pass a list of regex, the result will contain those which match any.
         """
+        if regexTextUnpreprocessed.__class__ == list:
+            #
+            # Call recursively to handle lists of regexes.
+            # TODO: We're doing some pointless sorting here. Change to an inner/outer
+            #       architecture.
+            result = set()
+            for r in regexTextUnpreprocessed:
+                result |= set( self.regexSearch( r ) )
+            return self.sortWordsByPopularity( list( result ) )
+
         matchingWords = []
         regex = re.compile( preprocessPhoneticRegex( regexTextUnpreprocessed )  + "$" )
         for word, encodedPronunciations in self.entries.iteritems():
@@ -210,11 +222,21 @@ class PhoneticDictionary( object ):
         """
         return self.popularities.get( sanitizeWord( word ), -1 )
 
-    def getRhymes( self, pronunciationOrWord, near=False ):
+    def getRhymeRegex( self, pronunciationOrWord, level="default" ):
         """
-        Return list of words which rhyme with this one.
+        Given a pronunciation or word, as well as a rhyme level, return a list
+        of phoneme regexes which would strictly match "rhymes" for that word.
+
+        The number of regexes returned will match the number of possible pronunciations
+        for the provided word. If a pronunciation is passed, there will be only
+        one item in the list
         """
         ret = []
+
+        #
+        # Define word and pronunciation from pronunciationOrWord
+        # NOTE: word will remain None whenever a pronunciation has been passed.
+        #
         word = None
         if isinstance( pronunciationOrWord, basestring ):
             word = sanitizeWord( pronunciationOrWord )
@@ -224,29 +246,70 @@ class PhoneticDictionary( object ):
         else:
             raise TypeError( "Can't interpret pronunciationOrWord of type {}.".format( pronunciationOrWord.__class__ ) )
 
-        for pronunciation in pronunciations:
-            mustEndWith = pronunciation[ [ isVowelSound( x ) for x in pronunciation ].index( True ) : ]
-            if near:
-                ret += self.regexSearch( ".* " + " #*".join( mustEndWith ) + "#*" )
-            else:
-                ret += self.regexSearch( ".* " + " ".join( mustEndWith ) )
-        return self.sortWordsByPopularity( [ x for x in set( ret ) if x != word ] )
+        if level == "perfect":
+            #
+            # All words which:
+            # - Contain the same sequence of phonemes as the given
+            #   pronunciation, including and following the first vowel
+            #   in the given pronunciation
+            #
+            # * Example:
+            # [ CH AE T ER ] (from "chatter")
+            #
+            # Phonemes after and including the first vowel:
+            # [ AE T ER]
+            #
+            # Anything can happen before:
+            #
+            # [ .* AE T ER ]
+            #
+            for pronunciation in pronunciations:
+                mustEndWith = pronunciation[ [ isVowelSound( x ) for x in pronunciation ].index( True ) : ]
+                ret.append( ".* " + " ".join( mustEndWith ) )
 
-    def getVowelMatches( self, pronunciationOrWord ):
-        """
-        Returns a list of words which have a similar vowel pattern.
-        """
-        ret = []
-        word = None
-        if isinstance( pronunciationOrWord, basestring ):
-            word = sanitizeWord( pronunciationOrWord )
-            pronunciations = self.findPronunciations( word )
-        elif pronunciationOrWord.__class__ == list:
-            pronunciations = [ pronunciationOrWord ]
+        elif level == "default":
+            #
+            # Same as perfect, except:
+            # - Consonant sounds can be interspersed between the
+            #   matched sequence phonemes.
+            #
+            # * Example
+            # Starting off from "perfect" example, allow interspersed
+            # consonant sounds.
+            #
+            # [ .* AE #* T #* ER #* ]
+            #
+            for pronunciation in pronunciations:
+                mustEndWith = pronunciation[ [ isVowelSound( x ) for x in pronunciation ].index( True ) : ]
+                ret.append( ".* " + " #*".join( mustEndWith ) + "#*" )
+
+        elif level == "loose":
+            #
+            # This strategy ignores consonant sounds entirely. It
+            # matches any word that:
+            # - Contains the same sequence of vowel phonemes as the
+            #   given pronunciation
+            # - Contains no additional vowels after that sequence
+            # - Can have any consonant sounds anywhere
+            # - Can have any vowel sounds before the sequence.
+            #
+            # * Example
+            #
+            # [ CH AE T ER ] (from "chatter")
+            #
+            # Vowel sounds only:
+            # [ AE ER ]
+            #
+            # Consonant sounds allowed in between:
+            # [ AE #* ER #* ]
+            #
+            # Anything before:
+            # [ .* AE #* ER #* ]
+            #
+            for pronunciation in pronunciations:
+                ret.append( ".* " + " #*".join( [ x for x in pronunciation if isVowelSound( x ) ] ) + " #*" )
+
         else:
-            raise TypeError( "Can't interpret pronunciationOrWord of type {}.".format( pronunciationOrWord.__class__ ) )
+            raise ValueError( "Unknown rhyme level given: {}".format( level ) )
 
-        for pronunciation in pronunciations:
-            vowels = [ p for p in pronunciation if isVowelSound( p ) ]
-            ret += self.regexSearch( ".*" + "#*".join( vowels ) + ".*" )
-        return self.sortWordsByPopularity( [ x for x in set( ret ) if x != word ] )
+        return ret

@@ -46,15 +46,8 @@ def startEpcServer( pd, pi ):
         if len( pd.findPronunciations( word ) ) == 0:
             pronunciation = pi.pronounce( word )
             query = pronunciation
-        if level == "loose":
-            results = pd.getVowelMatches( query )
-        elif level == "default":
-            results = pd.getRhymes( query, near=True )
-        elif level == "perfect":
-            results = pd.getRhymes( query, near=False )
-        else:
-            raise ValueError( "Unknown rhyme level {}".format( level ) )
-        return results
+        results = pd.regexSearch( pd.getRhymeRegex( query, level ) )
+        return [ r for r in results if r.lower() != word.lower() ]
 
     @server.register_function
     def regex( phoneme_regex ):
