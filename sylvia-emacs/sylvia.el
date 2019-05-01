@@ -216,6 +216,7 @@ show phonemes for the word at point."
           (sylvia:--message-no-log "%s: %s" captured-text phoneme-reprs)))))
 
 (defvar sylvia:syllable-count-overlays nil)
+(make-variable-buffer-local 'sylvia:syllable-count-overlays)
 
 (defun sylvia:update-syllable-margins ()
   "Update left margin to show syllable counts."
@@ -224,8 +225,6 @@ show phonemes for the word at point."
 (defun sylvia:--update-syllable-margins--deferred (sylcounts)
   (interactive)
   "Update left margin to show syllable counts."
-  ;; ensure this is buffer-local (don't think I'm doing this right?)
-  (make-local-variable 'sylvia:syllable-count-overlays)
   ;; clear previous overlays
   (dolist (ov sylvia:syllable-count-overlays)
     (delete-overlay ov))

@@ -293,6 +293,7 @@ Displays the syllable count for each line in the window margin.
 
 #+BEGIN_SRC emacs-lisp
 (defvar sylvia:syllable-count-overlays nil)
+(make-variable-buffer-local 'sylvia:syllable-count-overlays)
 
 (defun sylvia:update-syllable-margins ()
   "Update left margin to show syllable counts."
@@ -301,8 +302,6 @@ Displays the syllable count for each line in the window margin.
 (defun sylvia:--update-syllable-margins--deferred (sylcounts)
   (interactive)
   "Update left margin to show syllable counts."
-  ;; ensure this is buffer-local (don't think I'm doing this right?)
-  (make-local-variable 'sylvia:syllable-count-overlays)
   ;; clear previous overlays
   (dolist (ov sylvia:syllable-count-overlays)
     (delete-overlay ov))
