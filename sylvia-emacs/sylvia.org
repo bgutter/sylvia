@@ -259,32 +259,33 @@ show phonemes for the word at point."
   (sylvia:poem-phonemes-in-region
     (1- (region-beginning)) ;; emacs buffers are 1-indexed
     (1- (region-end))       ;; sylvia is 0-indexed
-    (sylvia:--echo-phonemes-in-region--deferred-generator
+    (sylvia:--echo-phonemes--deferred-generator
       (buffer-substring-no-properties (region-beginning) (region-end)))))
 
-(defun sylvia:--echo-phonemes-in-region--deferred-generator (text)
-  "Deferred callback generator for `sylvia:echo-phonemes-in-region'"
+(defun sylvia:--echo-phonemes-at-point ()
+  "Display phonetic representation of word at point in the echo area."
+  (let*
+      ((bounds (bounds-of-thing-at-point 'word))
+       (begin  (and bounds (car bounds)))
+       (end    (and bounds (cdr bounds))))
+    (when (and begin end)
+      (sylvia:poem-phonemes-in-region
+        (1- begin)
+        (1- end)
+        (sylvia:--echo-phonemes--deferred-generator
+          (buffer-substring-no-properties begin end))))))
+
+(defun sylvia:--echo-phonemes--deferred-generator (text)
+  "Deferred callback generator for `sylvia:echo-phonemes-in-region' and `sylvia:echo-phonemes-at-point'"
   (lexical-let
       ((captured-text text))
     #'(lambda (phoneme-reprs)
         (when phoneme-reprs
           (sylvia:--message-no-log "%s: %s" captured-text phoneme-reprs)))))
-
-(defun sylvia:--echo-phonemes-at-point ()
-  "Display phonetic representation of word at point in the echo area."
-  (let*
-      ((word (thing-at-point 'word 'no-properties)))
-    (when word
-      (sylvia:lookup word (sylvia:--echo-phonemes-at-point--deferred-generator word)))))
-
-(defun sylvia:--echo-phonemes-at-point--deferred-generator (word)
-  "Deferred callback generator for `sylvia:echo-phonemes-at-point'"
-  (lexical-let
-      ((captured-word word))
-    #'(lambda (phoneme-reprs)
-        (when phoneme-reprs
-          (sylvia:--message-no-log "%s: %s" captured-word phoneme-reprs)))))
 #+END_SRC
+
+#+RESULTS:
+: sylvia:--echo-phonemes-at-point
 
 *** Syllable Count Margins
 

@@ -106,6 +106,10 @@ If callback is given, the call is async."
   "Get syllable counts for current poem. If callback is given, the call is async."
   (sylvia:--epc-sync-or-async 'poem_syllable_counts `() callback))
 
+(defun sylvia:poem-phonemes-in-region (begin end &optional callback)
+  "Get phonemes in the associated region."
+  (sylvia:--epc-sync-or-async 'poem_phonemes_in_region `(,begin ,end) callback))
+
 (defvar sylvia-mode-hook nil
   "Hooks to be run when sylvia-mode is invoked.")
 
@@ -166,7 +170,7 @@ If callback is given, the call is async."
     "Run after every command."
     (when (sylvia:mode-p)
       (sylvia:apply-buffer-changes)
-      (sylvia:echo-phonemes-at-point)
+      (sylvia:update-echo)
       (sylvia:update-syllable-margins)))
 
 (defun sylvia:apply-buffer-changes ()
@@ -174,22 +178,42 @@ If callback is given, the call is async."
     "Update contents of buffer into Sylvia."
     (sylvia:update-poem (buffer-name)  (lambda (x))))
 
-(defun sylvia:echo-phonemes-at-point ()
-  "Display phonetic representation of word at point in the echo area."
+(defun sylvia:update-echo ()
+  "If region is active, display their phonemes in the echo area. Else,
+show phonemes for the word at point."
   (when (null (current-message))
-    (let*
-        ((word          (thing-at-point 'word 'no-properties)))
-      (when word
-        (sylvia:lookup word (sylvia:--echo-phonemes-at-point--deferred-generator word))))))
+    (if (use-region-p)
+        (sylvia:--echo-phonemes-in-region)
+      (sylvia:--echo-phonemes-at-point))))
 
-(defun sylvia:--echo-phonemes-at-point--deferred-generator (word)
-  "Deferred callback generator for `sylvia:echo-phonemes-at-point'"
+(defun sylvia:--echo-phonemes-in-region ()
+  "Display phonetic representation of the selected region in the echo area."
+  (sylvia:poem-phonemes-in-region
+    (1- (region-beginning)) ;; emacs buffers are 1-indexed
+    (1- (region-end))       ;; sylvia is 0-indexed
+    (sylvia:--echo-phonemes--deferred-generator
+      (buffer-substring-no-properties (region-beginning) (region-end)))))
+
+(defun sylvia:--echo-phonemes-at-point ()
+  "Display phonetic representation of word at point in the echo area."
+  (let*
+      ((bounds (bounds-of-thing-at-point 'word))
+       (begin  (and bounds (car bounds)))
+       (end    (and bounds (cdr bounds))))
+    (when (and begin end)
+      (sylvia:poem-phonemes-in-region
+        (1- begin)
+        (1- end)
+        (sylvia:--echo-phonemes--deferred-generator
+          (buffer-substring-no-properties begin end))))))
+
+(defun sylvia:--echo-phonemes--deferred-generator (text)
+  "Deferred callback generator for `sylvia:echo-phonemes-in-region' and `sylvia:echo-phonemes-at-point'"
   (lexical-let
-      ((captured-word word))
+      ((captured-text text))
     #'(lambda (phoneme-reprs)
         (when phoneme-reprs
-          (let ((message-log-max nil))
-            (message "%s: %s" captured-word phoneme-reprs))))))
+          (sylvia:--message-no-log "%s: %s" captured-text phoneme-reprs)))))
 
 (defvar sylvia:syllable-count-overlays nil)
 
@@ -246,7 +270,8 @@ See documentation for `sylvia:regex' for full details."
   (interactive)
   (let*
       ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
-       (phoneme-regex (read-string "Enter Phoneme Regex: "))
+       (initial       (if (use-region-p) (sylvia:--region-phonemes) ""))
+       (phoneme-regex (read-string "Enter Phoneme Regex: " (string-join initial " ")))
        (result        (completing-read
                         (format "Words matching pattern %s: " phoneme-regex)
                         (my-presorted-completion-table (sylvia:regex phoneme-regex)))))
@@ -271,6 +296,16 @@ NOTE: Works for built-in and helm, but ivy still sorts."
         (kill-new (downcase entry))
         (message "Pushed %S onto the kill-ring." entry))
     (message "Nothing at point!")))
+
+(defun sylvia:--message-no-log (&rest args)
+  "Write a message to the echo area, but keep it out of the messages buffer."
+  (let ((message-log-max nil))
+     (apply 'message args)))
+
+(defun sylvia:--region-phonemes ()
+  "Return a list of the phonemes covered by words in region. If a word has multiple possible pronunciations,
+choose the 'best' one. Returns a list of strings."
+  (sylvia:poem-phonemes-in-region (1- (region-beginning)) (1- (region-end))))
 
 (provide 'sylvia)
 ;;; sylvia.el ends here
