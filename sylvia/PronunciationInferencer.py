@@ -108,6 +108,11 @@ class PronunciationInferencer( object ):
         self.addRule( PronunciationRule( sequence="y", phonemes=[ "IY" ], alignEnd=True ) )
 
         #
+        # Override a single "o" if it appears at the end of a sequence
+        #
+        self.addRule( PronunciationRule( sequence="o", phonemes=[ "OW" ], alignEnd=True ) )
+
+        #
         # Double vowel sounds
         #
         doubleVowels = { 'a' : 'AE', 'e' : "IY", 'o' : 'UW' }
@@ -216,10 +221,6 @@ class PronunciationInferencer( object ):
 
         #
         # Ending s (z sound after t) without breaking silent e and ing
-        #
-
-        #
-        # le becomes "AH L"
         #
 
         #
