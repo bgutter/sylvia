@@ -52,6 +52,15 @@ class PronunciationRule( object ):
                     return ( len( word ) - len( sequence ), len( word ), self.kwargs[ 'phonemes' ] )
                 else:
                     return None
+            if 'alignStart' in self.kwargs and self.kwargs[ "alignStart" ]:
+                if startIdx != 0:
+                    return None
+                if len( sequence ) > ( len( word ) - endIdx ):
+                    return None
+                if word[ : endIdx ] == sequence:
+                    return ( 0, len( sequence ), self.kwargs[ 'phonemes' ] )
+                else:
+                    return None
             idx = word[ startIdx : endIdx ].find( sequence )
             if idx >= 0:
                 idx += startIdx
@@ -223,18 +232,11 @@ class PronunciationInferencer( object ):
         #
         # Silent k
         #
-
-        #
-        # gh and ph as f
-        #
+        self.addRule( PronunciationRule( sequence="kn", phonemes=[ "N" ], alignStart=True ) )
 
         #
         # ea in feathers?
-        #
-
-        #
-        # ed becomes t after double consonants
-        #
+        # Ambiguous: beather could be [ B IY DH ER ] or [ B EH DH ER ]
 
         #
         #
