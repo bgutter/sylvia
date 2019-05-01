@@ -192,7 +192,7 @@ The basic framework for the major-mode.
   :group 'sylvia)
 
 (defvar sylvia:idle-timer nil)
-(defvar sylvia:idle-delay 0.5)
+(defvar sylvia:idle-delay 0.25)
 (make-variable-buffer-local 'sylvia:idle-timer)
 
 (defun sylvia-mode ()
@@ -215,7 +215,6 @@ The basic framework for the major-mode.
 
   ;; start the idle timer, attach post-command hooks
   (setq sylvia:idle-timer (run-with-idle-timer sylvia:idle-delay t 'sylvia:idle-actions))
-  (add-hook 'post-command-hook 'sylvia:post-command-actions nil t)
 
   ;; run any mode-hooks
   (run-hooks 'sylvia-mode-hook))
@@ -225,9 +224,10 @@ The basic framework for the major-mode.
   (eq major-mode 'sylvia-mode))
 
 (defun sylvia:idle-actions ()
-  "Test")
+  "Things to do whenever emacs is idle."
+  (sylvia:update-display))
 
-(defun sylvia:post-command-actions ()
+(defun sylvia:update-display ()
     "Run after every command."
     (when (sylvia:mode-p)
       (sylvia:apply-buffer-changes)
@@ -254,7 +254,7 @@ idle. If region is active, show those phonemes instead.
 
 #+BEGIN_SRC emacs-lisp
 (defun sylvia:update-echo ()
-  "If region is active, display their phonemes in the echo area. Else,
+  "If region is active and not massive, display their phonemes in the echo area. Else,
 show phonemes for the word at point."
   (when (null (current-message))
     (if (and (use-region-p) (< (- (region-end) (region-beginning)) (/ (window-width (minibuffer-window)) 2)))
