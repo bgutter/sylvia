@@ -9,6 +9,10 @@
 from PhonemeDetails import *
 from LetterDetails import *
 
+import re
+
+ACCEPTABLE_CHARS_RE = re.compile( '[^a-zA-Z]' )
+
 def get_all_substrings(input_string):
     """
     https://stackoverflow.com/questions/22469997/how-to-get-all-the-contiguous-substrings-of-a-string-in-python
@@ -24,6 +28,16 @@ def flatten_list( x ):
         return [a for i in x for a in flatten_list(i)]
     else:
         return [x]
+
+def superSanitizeWord( word ):
+    """
+    We can work only with letters for now...
+    TODO We really should start handling apostrophes. Else, we get things like:
+      "she's" -> [ SH EH S ]
+    instead of
+      "she's" -> [ SH IY Z ]
+    """
+    return ACCEPTABLE_CHARS_RE.sub( "", word )
 
 class PronunciationRule( object ):
     """
@@ -302,4 +316,5 @@ class PronunciationInferencer( object ):
         Do it.
         """
         word = sanitizeWord( word ).lower()
+        word = superSanitizeWord( word )
         return self._pronouncePartial( word, 0, len( word ) )
