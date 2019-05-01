@@ -11,6 +11,7 @@ from LetterDetails import *
 
 WORD_SPLIT_RE = re.compile( "([^a-zA-Z'])" )
 WORD_RE       = re.compile( "[a-zA-Z']+" )
+NEWLINE_RE    = re.compile( "\n" )
 
 def lookupOrInfer( pd, pi, word ):
     """
@@ -77,17 +78,15 @@ class Poem( object ):
         Get the number of syllables on each line.
         """
         counts = []
-        for line in self.sourceText.splitlines():
-            count = 0
-            for word in WORD_SPLIT_RE.split( line ):
-                pronunciations = self.pd.findPronunciations( word )
-                if len( pronunciations ) > 0:
-                    # TODO: Using first for now
-                    pronunciation = pronunciations[0]
-                    for phoneme in pronunciation:
-                        if PHONEME_DETAILS__by_text[ phoneme ].isVowelSound():
-                            count += 1
-            counts.append( count )
+        line_endings = [ m.start() for m in re.finditer( NEWLINE_RE, self.sourceText ) ] + [ len( self.sourceText ) ]
+        last_idx = 0
+        for nl_idx in line_endings:
+            if nl_idx - last_idx == 0:
+                counts.append( 0 )
+            else:
+                phonemes = self.phonemesInRegion( last_idx, nl_idx )
+                counts.append( len( [ x for x in phonemes if isVowelSound( x ) ] ) )
+            last_idx = nl_idx
         return counts
 
     def phonemesInRegion( self, begin, end ):
@@ -110,15 +109,16 @@ class Poem( object ):
         Updates the phoneme <-> char mappings.
         """
         #
-        # Naive implementation for now
+        # * Naive implementation for now
         #
-        # * Each word character maps to the entire phoneme range for
+        # - Each word character maps to the entire phoneme range for
         #   that word.
         #
-        # * Each non-word character maps to a zero-length region between
-        #   the preceding and following words.
+        # - Each non-word character maps to a zero-length region
+        #   between the preceding and following words.
         #
-        # * Each phoneme maps to the entire word from which it was generated
+        # - Each phoneme maps to the entire word from which it was
+        #   generated
         #
         # TEXT INDEX:     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
         # TEXT:          [I     L  I  K  E     C  A  T  S  .  .  .  T  H  E  Y  '  R  E     P  R  E  T  T  Y  !]
@@ -126,34 +126,34 @@ class Poem( object ):
         # PHONEME INDEX:   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
         # PHONEMES:      [AY   L  AY   K   K  AE   T   S  DH  EH   R   P   R  IH   T  IY]
         #
-        # TEXT INDEX TO PHONEME REGION:
-        # ----------------------------
-        #   0:   0   1   // I        --> AY
-        #   1:   1   1   // <space>  --> <gap>
-        #   2:   1   4   // L        --> L AY K
-        #   3:   1   4   // I        --> L AY K
-        #   4:   1   4   // K        --> L AY K
-        #   5:   1   4   // E        --> L AY K
-        #   6:   4   4   // <space>  --> <gap>
-        #   7:   4   8   // C        --> K AE T S
-        #   8:   4   8   // A        --> K AE T S
-        #   9:   4   8   // T        --> K AE T S
-        #  10:   4   8   // S        --> K AE T S
-        #  11:   8   8   // .        --> <gap>
-        #  12:   8   8   // .        --> <gap>
-        #  13:   8   8   // .        --> <gap>
-        #  14:   8  11   // T        --> DH EH R
-        #  15:   8  11   // H        --> DH EH R
-        # ...
-        # 27:   11  16   // Y        --> P R IH T IY
-        # 28:   16  16   // !        --> <gap>
+        # ** Text Index (character) to Phoneme Range Map
+        # |------------+---------------+--------------+--------------------------|
+        # | Text Index | Phoneme Start | Phoneme Stop | Comment                  |
+        # |------------+---------------+--------------+--------------------------|
+        # |          0 |             0 |            1 | I        --> AY          |
+        # |          1 |             1 |            1 | <space>  --> <gap>       |
+        # |          2 |             1 |            4 | L        --> L AY K      |
+        # |          3 |             1 |            4 | I        --> L AY K      |
+        # |          4 |             1 |            4 | K        --> L AY K      |
+        # |          5 |             1 |            4 | E        --> L AY K      |
+        # |          6 |             4 |            4 | <space>  --> <gap>       |
+        # |          7 |             4 |            8 | C        --> K AE T S    |
+        # |          8 |             4 |            8 | A        --> K AE T S    |
+        # |          9 |             4 |            8 | T        --> K AE T S    |
+        # |         10 |             4 |            8 | S        --> K AE T S    |
+        # |         11 |             8 |            8 | .        --> <gap>       |
+        # |         12 |             8 |            8 | .        --> <gap>       |
+        # |         13 |             8 |            8 | .        --> <gap>       |
+        # |         14 |             8 |           11 | T        --> DH EH R     |
+        # |         15 |             8 |           11 | H        --> DH EH R     |
+        # |        ... |           ... |          ... | ...                      |
+        # |         27 |            11 |           16 | Y        --> P R IH T IY |
+        # |         28 |            16 |           16 | !        --> <gap>       |
         #
-        # PHONEME INDEX TO TEXT REGION:
-        # ----------------------------
+        # ** Phoneme Index (single phoneme) to Text Range (substring) Map
         # You get the idea, right?
-        #
 
-        # Create the basic mapping fields
+        # Create the basic mapping objects
         self.__charToPhonemeIndexMap = [ None ] * len( self.sourceText )
         self.__phonemes = []
 

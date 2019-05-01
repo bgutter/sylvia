@@ -357,7 +357,8 @@ See documentation for `sylvia:regex' for full details."
   (interactive)
   (let*
       ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
-       (phoneme-regex (read-string "Enter Phoneme Regex: "))
+       (initial       (if (use-region-p) (sylvia:--region-phonemes) ""))
+       (phoneme-regex (read-string "Enter Phoneme Regex: " (string-join initial " ")))
        (result        (completing-read
                         (format "Words matching pattern %s: " phoneme-regex)
                         (my-presorted-completion-table (sylvia:regex phoneme-regex)))))
@@ -438,7 +439,7 @@ NOTE: Works for built-in and helm, but ivy still sorts."
 (defun sylvia:--region-phonemes ()
   "Return a list of the phonemes covered by words in region. If a word has multiple possible pronunciations,
 choose the 'best' one. Returns a list of strings."
-  (sylvia:poem-phonemes-in-region (region-beginning) (region-end)))
+  (sylvia:poem-phonemes-in-region (1- (region-beginning)) (1- (region-end))))
 #+END_SRC
 
 ** End file
