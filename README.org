@@ -140,28 +140,34 @@ List words which rhyme with "chatter", using the perfect algorithm.
 
 #+BEGIN_SRC
 sylvia> rhyme perfect chatter
-Matter             Latter             Batter             Mater              Platter            Scatter            Flatter            
-Shatter            Hatter             Splatter           Fatter             Patter             Antimatter         Clatter            
-Spatter            Schlatter          Blatter            Natter             Sater              Satter             Slatter            
-Tatter             Mcphatter          Chitterchatter     Smatter            Vanatter           Vannater           Vatter             
-Vannatter          Mcfatter           Wildcatter
-sylvia> rhyme shaping
+Matter             Latter             Batter             Mater              Platter            
+Scatter            Flatter            Shatter            Hatter             Splatter           
+Fatter             Patter             Antimatter         Clatter            Spatter            
+Schlatter          Blatter            Natter             Sater              Satter             
+Slatter            Tatter             Mcphatter          Chitterchatter     Smatter            
+Vanatter           Vannater           Vatter             Vannatter          Mcfatter           
+Wildcatter         
 #+END_SRC
 
 ...using the default algorithm...
 
 #+BEGIN_SRC
 sylvia> rhyme chatter        
-After                  Chapter                Matter                 Master                 Factors                Factor                 
-Pattern                Faster                 Matters                Webmaster              Patterns               Adapter                
-Contractor             Contractors            Disaster               Actor                  Masters                Latter                 
-Chapters               Actors                 Adapters               Lancaster              Saturn                 Adaptor                
-Pastor                 Thereafter             Tractor                Scattered              Disasters              Ticketmaster           
-Napster                Laughter               Reactor                Adaptors               Baxter                 Stratford              
-Blaster                Lantern                Bastard                Maxtor                 Tractors               Shattered              
-Plaster                Hereafter              Subchapter             Batter                 Broadcasters           Antwerp                
-Raptor                 Mater                  Platter                Scatter                Hamster                Raster                 
-Subcontractor          Reactors               Pastors                Subcontractors         Broadcaster            Mastered
+After                  Chapter                Matter                 Master                 
+Factors                Factor                 Pattern                Faster                 
+Matters                Webmaster              Patterns               Adapter                
+Contractor             Contractors            Disaster               Actor                  
+Masters                Latter                 Chapters               Actors                 
+Adapters               Lancaster              Saturn                 Adaptor                
+Pastor                 Thereafter             Tractor                Scattered              
+Disasters              Ticketmaster           Napster                Laughter               
+Reactor                Adaptors               Baxter                 Stratford              
+Blaster                Lantern                Bastard                Maxtor                 
+Tractors               Shattered              Plaster                Hereafter              
+Subchapter             Batter                 Broadcasters           Antwerp                
+Raptor                 Mater                  Platter                Scatter                
+Hamster                Raster                 Subcontractor          Reactors               
+Pastors                Subcontractors         Broadcaster            Mastered
 ... many more...
 #+END_SRC
 
@@ -169,22 +175,35 @@ Subcontractor          Reactors               Pastors                Subcontract
 
 #+BEGIN_SRC
 sylvia> rhyme loose chatter
-After                  Standard               Password               Chapter                Standards              Rather                 
-Matter                 Cancer                 Answer                 Master                 Transfer               Answers                
-Factors                Factor                 Pattern                Faster                 Matters                Manner                 
-Webmaster              Patterns               Hampshire              Adapter                Contractor             Banner                 
-Contractors            Alexander              Capture                Disaster               Actor                  Masters                
-Traveler               Latter                 Albert                 Chapters               Packard                Answered               
-Scanner                Bachelor               Actors                 Transfers              Adverse                Amber                  
-Tracker                Transferred            Planner                Hacker                 Commander              Adapters               
-Scanners               Manufactured           Stanford               Manufacture            Anchor                 Gathered               
-Travelers              Captured               Grammar                Hazard                 Anger                  Gather                 
-Lancaster              Hammer                 Manor                  Programmer             Hazards                Bradford               
-Madagascar             Saturn                 Banners                Passwords              Adaptor                Pastor                 
-Hamburg                Ladder                 Flashers               Programmers            Planners               Thereafter             
-Chancellor             Frankfurt              Tractor                Wagner                 Hackers                Scattered              
-Ballard                Disasters              Handler                Chandler               Sanders                Ticketmaster           
-Napster                Banker                 Dancer                 Dancers                Jasper                 Laughter 
+After                  Standard               Password               Chapter                
+Standards              Rather                 Matter                 Cancer                 
+Answer                 Master                 Transfer               Answers                
+Factors                Factor                 Pattern                Faster                 
+Matters                Manner                 Webmaster              Patterns               
+Hampshire              Adapter                Contractor             Banner                 
+Contractors            Alexander              Capture                Disaster               
+Actor                  Masters                Traveler               Latter                 
+Albert                 Chapters               Packard                Answered               
+Scanner                Bachelor               Actors                 Transfers              
+Adverse                Amber                  Tracker                Transferred            
+Planner                Hacker                 Commander              Adapters               
+Scanners               Manufactured           Stanford               Manufacture            
+Anchor                 Gathered               Travelers              Captured               
+Grammar                Hazard                 Anger                  Gather                 
+Lancaster              Hammer                 Manor                  Programmer             
+Hazards                Bradford               Madagascar             Saturn                 
+Banners                Passwords              Adaptor                Pastor                 
+Hamburg                Ladder                 Flashers               Programmers            
+Planners               Thereafter             Chancellor             Frankfurt              
+Tractor                Wagner                 Hackers                Scattered              
+Ballard                Disasters              Handler                Chandler               
+Sanders                Ticketmaster           Napster                Banker                 
+Dancer                 Dancers                Jasper                 Laughter               
+Backward               Panthers               Captures               Bladder                
+Sampler                Panther                Reactor                Stafford               
+Backwards              Adaptors               Manufactures           Glamour                
+Baxter                 Stratford              Blackburn              Amherst                
+Blaster                Tavern                 Lambert                Fracture 
 ...many, many more...
 #+END_SRC
 
