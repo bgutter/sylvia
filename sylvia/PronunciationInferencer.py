@@ -216,12 +216,20 @@ class PronunciationInferencer( object ):
             self.addRule( PronunciationRule( sequence=l+l, phonemes=p, priority=1 ) )
 
         #
-        # o at end of word after consonants
+        # Ending s (z sound after t) without breaking silent e and ing
         #
 
         #
-        # Ending s (z sound after t) without breaking silent e and ing
+        # ey -> [ IY ] as in keystone, hackney, etc
         #
+        # TODO: This is probably a 50/50. EY is extremely common too (hey, survey, etc),
+        #       and I can't think of a simple way to decide between them offhand.
+        #
+        #       Regardless, having something here prevents us from guessing the "e" and
+        #       the "y" separately, which causes double vowel phonemes and messes up
+        #       syllable counts.
+        #
+        self.addRule( PronunciationRule( sequence="ey", phonemes=[ "IY" ] ) )
 
         #
         # Silent gh
