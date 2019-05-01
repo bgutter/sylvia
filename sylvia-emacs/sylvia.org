@@ -94,7 +94,6 @@ RPC call into the Sylvia instance.
 (defun sylvia:--epc-async (func args cb)
   "Call a Sylvia command asynchronously with a callback."
   (deferred:$
-    ;(deferred:wait-idle 1000)
     (epc:call-deferred sylvia:epc-manager func args)
     (deferred:nextc it cb)))
 
@@ -258,7 +257,7 @@ idle. If region is active, show those phonemes instead.
   "If region is active, display their phonemes in the echo area. Else,
 show phonemes for the word at point."
   (when (null (current-message))
-    (if (use-region-p)
+    (if (and (use-region-p) (< (- (region-end) (region-beginning)) (/ (window-width (minibuffer-window)) 2)))
         (sylvia:--echo-phonemes-in-region)
       (sylvia:--echo-phonemes-at-point))))
 
