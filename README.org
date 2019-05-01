@@ -269,64 +269,6 @@ sylvia> popularity teutonic
 301907
 #+END_SRC
 
-* Experimental Functionality
-
-Sylvia primarily works with individual words and phonemes. However, there are some commands which work with poems instead. A poem is simply a body of text. Working with poems in Sylvia is clunky and aimed towards development, not end-users. Sylvia isn't, and won't become, a text editor. But, it may become a /library/ for text editors...
-
-** compose
-
-Compose a poem and bind its content to some name.
-
-#+BEGIN_SRC
-sylvia> compose my-masterpiece
-
-Enter text. Press ctrl+d on an empty line to save.
-> Roses are red, violets are blue,
-> I am reading this and so are you
-> 
-
-Saved poem to my-masterpiece
-#+END_SRC
-
-** show
-
-Shows a poem.
-
-#+BEGIN_SRC
-sylvia> show my-masterpiece
-
-Roses are red, violets are blue,
-I am reading this and so are you
-#+END_SRC
-
-** load
-
-Loads a poem from disk.
-
-#+BEGIN_SRC
-sylvia> load "/path/to/file.txt" my-other-masterpiece
-#+END_SRC
-
-** euphony
-
-Visualizes euphonious vs cacophonous phonemes in a poem.
-
-#+BEGIN_SRC
-sylvia> compose eutest
-
-Enter text. Press ctrl+d on an empty line to save.
-> smooth, flowing lines
-> Crack! Bang! Obnoxious racket.
-> 
-
-Saved poem to eutest
-
-sylvia> euphony eutest
-
-~~~~, ~~~~~ ~~~~
-X~~X! X~~! ~X~~X~~~ ~~X~X.
-#+END_SRC
-
 * Other Information
 
 If curious, [[http://norvig.com/ngrams/][read up on Peter Norvig's word popularity data]], the data source used for Sylvia's default word popularities.
