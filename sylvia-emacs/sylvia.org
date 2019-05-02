@@ -197,7 +197,7 @@ The basic framework for the major-mode.
 
 #+BEGIN_SRC emacs-lisp
 (defvar sylvia:idle-timer nil)
-(defvar sylvia:idle-delay 0.25)
+(defvar sylvia:idle-delay 0.1)
 (make-variable-buffer-local 'sylvia:idle-timer)
 
 (defun sylvia-mode ()
@@ -262,30 +262,16 @@ idle. If region is active, show those phonemes instead.
   "If region is active and not massive, display their phonemes in the echo area. Else,
 show phonemes for the word at point."
   (when (null (current-message))
-    (if (and (use-region-p) (< (- (region-end) (region-beginning)) (/ (window-width (minibuffer-window)) 2)))
-        (sylvia:--echo-phonemes-in-region)
-      (sylvia:--echo-phonemes-at-point))))
-
-(defun sylvia:--echo-phonemes-in-region ()
-  "Display phonetic representation of the selected region in the echo area."
-  (sylvia:poem-phonemes-in-region
-    (1- (region-beginning)) ;; emacs buffers are 1-indexed
-    (1- (region-end))       ;; sylvia is 0-indexed
-    (sylvia:--echo-phonemes--deferred-generator
-      (buffer-substring-no-properties (region-beginning) (region-end)))))
-
-(defun sylvia:--echo-phonemes-at-point ()
-  "Display phonetic representation of word at point in the echo area."
-  (let*
-      ((bounds (bounds-of-thing-at-point 'word))
-       (begin  (and bounds (car bounds)))
-       (end    (and bounds (cdr bounds))))
-    (when (and begin end)
-      (sylvia:poem-phonemes-in-region
-        (1- begin)
-        (1- end)
-        (sylvia:--echo-phonemes--deferred-generator
-          (buffer-substring-no-properties begin end))))))
+    (let*
+        ((bounds (sylvia:--get-relevant-boundaries))
+         (begin  (and bounds (car bounds)))
+         (end    (and bounds (cadr bounds))))
+      (when bounds
+        (sylvia:poem-phonemes-in-region
+          (1- begin)
+          (1- end)
+          (sylvia:--echo-phonemes--deferred-generator
+            (buffer-substring-no-properties begin end)))))))
 
 (defun sylvia:--echo-phonemes--deferred-generator (text)
   "Deferred callback generator for `sylvia:echo-phonemes-in-region' and `sylvia:echo-phonemes-at-point'"
@@ -345,38 +331,6 @@ Displays the syllable count for each line in the window margin.
     (set-window-margins win 4))))
 #+END_SRC
 
-*** Rhyme at Point
-
-Upon command invocation, offer rhymes for whatever's at point via
-completing-read, and place the result into the kill-ring.
-
-#+BEGIN_SRC emacs-lisp
-(defun sylvia:copy-rhyme-at-point-as-kill (prefix-arg)
-  "Interactively list rhymes for thing at point, placing selected word into kill-ring.
-Without prefix arg, use Sylvia's default rhyme-level.
-With C-u prefix, use Sylvia's 'loose' rhyme-level.
-With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
-  (interactive "P")
-  (let
-      ((word                     (thing-at-point 'word 'no-properties))
-       (rhyme-level              (cond ((equal prefix-arg '(4))  'loose)
-                                       ((equal prefix-arg '(16)) 'perfect)
-                                       (t                        'default))))
-    (when word
-      (sylvia:rhyme word rhyme-level (sylvia:--copy-rhyme-at-point-as-kill--deferred-generator word rhyme-level)))))
-
-(defun sylvia:--copy-rhyme-at-point-as-kill--deferred-generator (word rhyme-level)
-  "Deferred callback generator for `sylvia:copy-rhyme-at-point-as-kill'."
-  (lexical-let
-      ((captured-word              word)
-       (captured-rhyme-level rhyme-level))
-    #'(lambda (rhyming-words)
-      (sylvia:--loudly-try-push-kill-ring
-        (let ((ivy-sort-functions-alist nil)) ;; workaround ivy always sorting entries
-          (completing-read (format "[%s] Rhymes for %s: " (symbol-name captured-rhyme-level) captured-word)
-                           (my-presorted-completion-table rhyming-words)))))))
-#+END_SRC
-
 *** Phonetic Regex Search
 
 #+BEGIN_SRC emacs-lisp
@@ -407,24 +361,36 @@ See documentation for `sylvia:regex' for full details."
                            (my-presorted-completion-table matching-words)))))))
 #+END_SRC
 
-**** Interactive version WIP
-TODO: Find a way to do it realtime/interactively with completing-read.
-Tempted to just switch to ivy directly.
+*** Rhyme at Point
 
-#+BEGIN_SRC
-(defun sylvia:phoneme-query (&optional initial-input)
-  "Interactively search for words using a phonetic regex."
-  (interactive)
-  (completing-read "Words matching phoneme-regex: "
-                   #'sylvia:--phoneme-query-collection-func))
+Upon command invocation, offer rhymes for whatever's at point via
+completing-read, and place the result into the kill-ring.
 
-(defun sylvia:--phoneme-query-collection-func (string pred action)
-  "Collection function for `sylvia:phoneme-query'."
-  (cond
-    ((eq action 'metadata)
-      `(metadata (display-sort-function . ,#'identity)))
-    (t
-      (sylvia:regex string))))
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:copy-rhyme-at-point-as-kill (prefix-arg)
+  "Interactively list rhymes for thing at point, placing selected word into kill-ring.
+Without prefix arg, use Sylvia's default rhyme-level.
+With C-u prefix, use Sylvia's 'loose' rhyme-level.
+With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
+  (interactive "P")
+  (let
+      ((word        (thing-at-point 'word 'no-properties))
+       (rhyme-level (cond ((equal prefix-arg '(4))  'loose)
+                           ((equal prefix-arg '(16)) 'perfect)
+                           (t                        'default))))
+    (when word
+      (sylvia:rhyme word rhyme-level (sylvia:--copy-rhyme-at-point-as-kill--deferred-generator word rhyme-level)))))
+
+(defun sylvia:--copy-rhyme-at-point-as-kill--deferred-generator (word rhyme-level)
+  "Deferred callback generator for `sylvia:copy-rhyme-at-point-as-kill'."
+  (lexical-let
+      ((captured-word              word)
+       (captured-rhyme-level rhyme-level))
+    #'(lambda (rhyming-words)
+      (sylvia:--loudly-try-push-kill-ring
+        (let ((ivy-sort-functions-alist nil)) ;; workaround ivy always sorting entries
+          (completing-read (format "[%s] Rhymes for %s: " (symbol-name captured-rhyme-level) captured-word)
+                           (my-presorted-completion-table rhyming-words)))))))
 #+END_SRC
 
 *** Phoneme Query at Point
@@ -475,6 +441,23 @@ NOTE: Works for built-in and helm, but ivy still sorts."
      (apply 'message args)))
 #+END_SRC
 
+**** Get relevant text
+
+#+BEGIN_SRC emacs-lisp
+(defun sylvia:--get-relevant-boundaries ()
+  "If region is active and 'small', return region boundaries. Else, return bounds of
+word at point. If no word at point either, return nil."
+  (if (and (use-region-p) (< (- (region-end) (region-beginning)) (/ (window-width (minibuffer-window)) 2)))
+      `(,(region-beginning) ,(region-end))
+    (let*
+        ((bounds (bounds-of-thing-at-point 'word))
+         (begin  (and bounds (car bounds)))
+         (end    (and bounds (cdr bounds))))
+      (if (and begin end)
+          `(,begin ,end)
+        nil))))
+#+END_SRC
+
 **** General information about phonemes
 
 #+BEGIN_SRC emacs-lisp
@@ -482,9 +465,6 @@ NOTE: Works for built-in and helm, but ivy still sorts."
   "Is this a vowel phoneme?"
   (member phoneme (mapcar #'symbol-name '(AA AE AH AO AW AY EH ER EY IH IY OW OY UH UW))))
 #+END_SRC
-
-#+RESULTS:
-: nil
 
 ** End file
 #+BEGIN_SRC emacs-lisp
