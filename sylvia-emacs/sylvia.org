@@ -123,7 +123,11 @@ Finally, add the functions which expose Sylvia's relevant APIs.
 
 (defun sylvia:get-rhyme-levels (&optional callback)
   "Return list of supported rhyme levels."
-  (sylvia:--epc-sync-or-async 'rhyme_levels '()callback))
+  (sylvia:--epc-sync-or-async 'rhyme_levels '() callback))
+
+(defun sylvia:get-rhyme-regex (phonemes-or-word rhyme-level &optional callback)
+  "Return a phoneme regex given an input word and rhyme strategy name."
+  (sylvia:--epc-sync-or-async 'rhyme_regex `(,phonemes-or-word ,rhyme-level) callback))
 
 (defun sylvia:regex (phoneme-regex &optional callback)
   "Search for words whose pronunciation matches the given phoneme-regex.
@@ -295,9 +299,6 @@ show phonemes for the word at point."
     (propertize phoneme 'face 'sylvia:consonant-face)))
 #+END_SRC
 
-#+RESULTS:
-: sylvia:--fontify-phonemes--echo
-
 *** Syllable Count Margins
 
 Displays the syllable count for each line in the window margin.
@@ -353,7 +354,9 @@ See documentation for `sylvia:regex' for full details."
   "Deferred callback for `sylvia:copy-regex-query-result-as-kill'."
   (let*
       ((phoneme-regex (read-string "Enter Phoneme Regex: " (string-join initial-input-list " "))))
-    (sylvia:regex phoneme-regex (sylvia:--copy-regex-query-result-as-kill--deferred-generator--select-result phoneme-regex))))
+    (sylvia:regex
+      phoneme-regex
+     (sylvia:--copy-regex-query-result-as-kill--deferred-generator--select-result phoneme-regex))))
 
 (defun sylvia:--copy-regex-query-result-as-kill--deferred-generator--select-result (phoneme-regex)
   "Seconds deferred callback generator for `sylvia:copy-regex-query-result-as-kill'."
@@ -371,39 +374,71 @@ Upon command invocation, offer rhymes for whatever's at point via
 completing-read, and place the result into the kill-ring.
 
 #+BEGIN_SRC emacs-lisp
-(defun sylvia:copy-rhyme-at-point-as-kill (prefix-arg)
-  "Interactively list rhymes for thing at point, placing selected word into kill-ring.
-Without prefix arg, use Sylvia's default rhyme-level.
-With C-u prefix, use Sylvia's 'loose' rhyme-level.
-With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
-  (interactive "P")
-  (let
-      ((word        (thing-at-point 'word 'no-properties))
-       (rhyme-level (cond ((equal prefix-arg '(4))  'loose)
-                           ((equal prefix-arg '(16)) 'perfect)
-                           (t                        'default))))
-    (when word
-      (sylvia:rhyme word rhyme-level (sylvia:--copy-rhyme-at-point-as-kill--deferred-generator word rhyme-level)))))
+  (defun sylvia:copy-rhyme-as-kill (prefix-arg)
+    "Interactively list rhymes for thing at point (or region), placing selected word into
+  the kill-ring. Without prefix arg, use Sylvia's default rhyme-level. With prefix arg,
+  interactively choose rhyme level and edit the regex before searching."
+    (interactive "P")
+    (if prefix-arg
+        (sylvia:--copy-rhyme-as-kill--interactive)
+      (sylvia:--copy-rhyme-as-kill--default)))
 
-(defun sylvia:--copy-rhyme-at-point-as-kill--deferred-generator (word rhyme-level)
-  "Deferred callback generator for `sylvia:copy-rhyme-at-point-as-kill'."
-  (lexical-let
-      ((captured-word              word)
-       (captured-rhyme-level rhyme-level))
-    #'(lambda (rhyming-words)
-      (sylvia:--loudly-try-push-kill-ring
-        (let ((ivy-sort-functions-alist nil)) ;; workaround ivy always sorting entries
-          (completing-read (format "[%s] Rhymes for %s: " (symbol-name captured-rhyme-level) captured-word)
-                           (my-presorted-completion-table rhyming-words)))))))
-#+END_SRC
+  (defun sylvia:--copy-rhyme-as-kill--interactive ()
+    "Prompt for rhyme-level, then display the regex for editing before searching. The user
+  is then asked to choose a result, and that result is placed in the kill-ring."
+    (sylvia:get-rhyme-levels #'sylvia:--copy-rhyme-as-kill--interactive-deferred-choose-level))
 
-*** Phoneme Query at Point
+  (defun sylvia:--copy-rhyme-as-kill--interactive-deferred-choose-level (rhyme-levels)
+    "Deferred callback for `sylvia:--copy-rhyme-as-kill--interactive'. Upon receiving
+  a list of supported rhyme levels from Sylvia, it asks the user to choose one and then
+  continues the process."
+    (let*
+        ((bounds      (sylvia:--get-relevant-boundaries))
+         (begin       (and bounds (car bounds)))
+         (end         (and bounds (cadr bounds)))
+         (text        (and bounds (buffer-substring-no-properties begin end)))
+         (rhyme-level (and text (completing-read (format "[ %s ] Choose rhyme-level: " text) rhyme-levels))))
+      (when (and rhyme-level bounds)
+        (sylvia:poem-phonemes-in-region
+          (1- begin)
+          (1- end)
+          (sylvia:--copy-rhyme-as-kill--interactive-deferred-generator-get-regex rhyme-level)))))
 
-Upon command invocation, begin a phoneme-regex query with the phonemes
-of the word at point preloaded.
+  (defun sylvia:--copy-rhyme-as-kill--interactive-deferred-generator-get-regex (rhyme-level)
+    "Deferred callback generator for `sylvia:--copy-rhyme-as-kill--interactive-deferred-choose-level'.
+  Generates a lambda which, upon receiving a pronunciation from Sylvia, itself requests the rhyme regex.
+  After this chain-link, we fall back into the normal phoneme-query flow."
+    (lexical-let ((captured-rhyme-level rhyme-level))
+      #'(lambda (phonemes)
+        (sylvia:get-rhyme-regex
+          phonemes
+          captured-rhyme-level
+          #'sylvia:--copy-regex-query-result-as-kill--deferred-get-input))))
 
-#+BEGIN_SRC emacs-lisp
-;; TODO
+  (defun sylvia:--copy-rhyme-as-kill--default ()
+    "Get the default rhyme regex and show the query results."
+    (let*
+        ((bounds (sylvia:--get-relevant-boundaries))
+         (begin  (and bounds (car bounds)))
+         (end    (and bounds (cadr bounds))))
+      (when bounds
+        (sylvia:poem-phonemes-in-region
+          (1- begin)
+          (1- end)
+          #'sylvia:--copy-rhyme-as-kill--default-deferred-get-regex))))
+
+  (defun sylvia:--copy-rhyme-as-kill--default-deferred-get-regex (phonemes)
+    "Deferred callback for `sylvia:--copy-rhyme-as-kill--default' Upon receiving phonemes from
+  Sylvia, construct a *default* rhyme regex. After this chain-link, we fall back into the
+  normal phoneme-query flow."
+    (when phonemes
+      (sylvia:get-rhyme-regex
+        phonemes
+        "default"
+        (lambda (phoneme-regex-list)
+          (sylvia:regex
+            (car phoneme-regex-list) ;; should only be one, since we pass an explicit pronunciation
+            (sylvia:--copy-regex-query-result-as-kill--deferred-generator--select-result (car phoneme-regex-list)))))))
 #+END_SRC
 
 *** Utility

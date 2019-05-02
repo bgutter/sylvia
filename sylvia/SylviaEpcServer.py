@@ -40,6 +40,10 @@ def startEpcServer( pd, pi ):
         return pd.getRhymeLevels()
 
     @server.register_function
+    def rhyme_regex( pronunciationOrWord, rhymeLevel ):
+        return pd.getRhymeRegex( as_ascii( pronunciationOrWord ), as_ascii( rhymeLevel ) )
+
+    @server.register_function
     def rhyme(word, level):
         if level == []:
             level = "default"
