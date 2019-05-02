@@ -149,6 +149,7 @@ If callback is given, the call is async."
 (defvar sylvia:idle-delay 0.1)
 (make-variable-buffer-local 'sylvia:idle-timer)
 
+;;;###autoload
 (defun sylvia-mode ()
   "Major mode for editing text with a focus on phonetic values."
   (interactive)
