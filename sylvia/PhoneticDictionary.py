@@ -143,6 +143,12 @@ class PhoneticDictionary( object ):
             self.popularities[ word ] = int( popularity )
             dictListAdd( self.entries, word, pronunciation )
 
+    def getRhymeLevels( self ):
+        """
+        Return list of supported rhyme levels for self.getRhymeRegex()
+        """
+        return [ "default", "perfect", "loose" ]
+
     def getEntries( self ):
         """
         Get a list of all the words in the dictionary.

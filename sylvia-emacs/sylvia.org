@@ -121,6 +121,10 @@ Finally, add the functions which expose Sylvia's relevant APIs.
   "Find rhymes for a word. If callback is given, the call is async."
   (sylvia:--epc-sync-or-async 'rhyme `(,word ,(symbol-name rhyme-level)) callback))
 
+(defun sylvia:get-rhyme-levels (&optional callback)
+  "Return list of supported rhyme levels."
+  (sylvia:--epc-sync-or-async 'rhyme_levels '()callback))
+
 (defun sylvia:regex (phoneme-regex &optional callback)
   "Search for words whose pronunciation matches the given phoneme-regex.
 Assume a typical Python regular expression, with the following additions:
