@@ -31,7 +31,12 @@ As described in the [[../README.org][Sylvia package README]]:
 pip2 install sylvia
 #+END_SRC
 
-Then download =sylvia.el= into your =~/.emacs.d/lisp/= folder, or somewhere in your =load-path=.
+The emacs component is not yet in MELPA. To install, download =sylvia.el= somewhere in your =load-path=, and then install the dependencies in emacs;
+
+#+BEGIN_SRC
+M-x package-install <return> epc <return>
+M-x package-install <return> dash <return>
+#+END_SRC
 
 * Usage
 
