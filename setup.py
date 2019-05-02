@@ -8,10 +8,10 @@ setup(
   author = 'Brandon Guttersohn',
   author_email = 'bguttersohn@gmail.com',
   url = 'https://github.com/bgutter/sylvia',
-  download_url = 'https://github.com/bgutter/sylvia/archive/0.2.tar.gz',
+  download_url = 'https://github.com/bgutter/sylvia/archive/development/0.2.tar.gz',
   keywords = [ 'cmudict', 'phoneme', 'phonetic', 'rhyme', 'regex' ],
   classifiers = [],
-  package_data={'': ['cmudict.sylviabin']}
+  package_data={'': ['cmudict.sylviabin']},
   install_requires=[
       "epc",
       ]
