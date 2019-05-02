@@ -122,7 +122,7 @@ If callback is given, the call is async."
 
 (defvar sylvia-mode-map
   (let ((map (make-keymap)))
-    (define-key map (kbd "C-c C-r") 'sylvia:copy-rhyme-at-point-as-kill)
+    (define-key map (kbd "C-c C-r") 'sylvia:copy-rhyme-as-kill)
     (define-key map (kbd "C-c C-q") 'sylvia:copy-regex-query-result-as-kill)
     map)
   "Keymap for sylvia-mode.")
