@@ -205,7 +205,7 @@ The basic framework for the major-mode.
 
 #+BEGIN_SRC emacs-lisp
 (defvar sylvia:idle-timer nil)
-(defvar sylvia:idle-delay 0.1)
+(defvar sylvia:idle-delay 0.25)
 (make-variable-buffer-local 'sylvia:idle-timer)
 
 ;;;###autoload

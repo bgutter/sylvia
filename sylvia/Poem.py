@@ -49,6 +49,9 @@ class Poem( object ):
         """
         Set the poem text.
         """
+        if text == self.sourceText:
+            # Save time if client isn't able to easily track changes.
+            return
         self.sourceText = text
         self.__updateAtlas()
 

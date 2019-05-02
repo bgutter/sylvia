@@ -86,6 +86,7 @@ Known Issues:
 - Syllable overlays are sometimes thrown into the wrong window?
 - Realtime query like counsel-ag, swyper, etc would be much, much, much nicer
 - Delta updates to the Sylvia server would be more efficient
+- Non-ASCII characters in the buffer will break everything. Sylvia is going to be converted to Python3 to fix this.
 
 Feature Ideas:
 - Syntax-highlighting for regions in current stanza which syllabically correspond to word-at-point
