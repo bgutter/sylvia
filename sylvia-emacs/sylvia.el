@@ -5,6 +5,7 @@
 ;; Author: Brandon Guttersohn <code@guttersohn.org>
 ;; Keywords: poetry poem lyrics phonetics sylvia rhyme syllable
 ;; Version: 0.0.1
+;; Package-Requires: ((epc "20140610.534") (dash "20190424.1804"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -146,7 +147,7 @@ If callback is given, the call is async."
   :group 'sylvia)
 
 (defvar sylvia:idle-timer nil)
-(defvar sylvia:idle-delay 0.1)
+(defvar sylvia:idle-delay 0.25)
 (make-variable-buffer-local 'sylvia:idle-timer)
 
 ;;;###autoload

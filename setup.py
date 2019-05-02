@@ -12,4 +12,7 @@ setup(
   keywords = [ 'cmudict', 'phoneme', 'phonetic', 'rhyme', 'regex' ],
   classifiers = [],
   package_data={'': ['cmudict.sylviabin']}
+  install_requires=[
+      "epc",
+      ]
 )
