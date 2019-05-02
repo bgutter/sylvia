@@ -53,7 +53,6 @@
 (defun sylvia:--epc-async (func args cb)
   "Call a Sylvia command asynchronously with a callback."
   (deferred:$
-    ;(deferred:wait-idle 1000)
     (epc:call-deferred sylvia:epc-manager func args)
     (deferred:nextc it cb)))
 
@@ -139,7 +138,7 @@ If callback is given, the call is async."
   :group 'sylvia)
 
 (defvar sylvia:idle-timer nil)
-(defvar sylvia:idle-delay 0.5)
+(defvar sylvia:idle-delay 0.25)
 (make-variable-buffer-local 'sylvia:idle-timer)
 
 (defun sylvia-mode ()
@@ -162,7 +161,6 @@ If callback is given, the call is async."
 
   ;; start the idle timer, attach post-command hooks
   (setq sylvia:idle-timer (run-with-idle-timer sylvia:idle-delay t 'sylvia:idle-actions))
-  (add-hook 'post-command-hook 'sylvia:post-command-actions nil t)
 
   ;; run any mode-hooks
   (run-hooks 'sylvia-mode-hook))
@@ -172,9 +170,10 @@ If callback is given, the call is async."
   (eq major-mode 'sylvia-mode))
 
 (defun sylvia:idle-actions ()
-  "Test")
+  "Things to do whenever emacs is idle."
+  (sylvia:update-display))
 
-(defun sylvia:post-command-actions ()
+(defun sylvia:update-display ()
     "Run after every command."
     (when (sylvia:mode-p)
       (sylvia:apply-buffer-changes)
@@ -187,10 +186,10 @@ If callback is given, the call is async."
     (sylvia:update-poem (buffer-name)  (lambda (x))))
 
 (defun sylvia:update-echo ()
-  "If region is active, display their phonemes in the echo area. Else,
+  "If region is active and not massive, display their phonemes in the echo area. Else,
 show phonemes for the word at point."
   (when (null (current-message))
-    (if (use-region-p)
+    (if (and (use-region-p) (< (- (region-end) (region-beginning)) (/ (window-width (minibuffer-window)) 2)))
         (sylvia:--echo-phonemes-in-region)
       (sylvia:--echo-phonemes-at-point))))
 
@@ -269,29 +268,50 @@ Without prefix arg, use Sylvia's default rhyme-level.
 With C-u prefix, use Sylvia's 'loose' rhyme-level.
 With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
   (interactive "P")
-  (let*
-      ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
-       (word                     (thing-at-point 'word 'no-properties))
+  (let
+      ((word                     (thing-at-point 'word 'no-properties))
        (rhyme-level              (cond ((equal prefix-arg '(4))  'loose)
                                        ((equal prefix-arg '(16)) 'perfect)
-                                       (t                        'default)))
-       (rhyme                    (and word (completing-read
-                                   (format "[%s] Rhymes for %s: " (symbol-name rhyme-level) word)
-                                   (my-presorted-completion-table (sylvia:rhyme word rhyme-level))))))
-    (sylvia:--loudly-try-push-kill-ring rhyme)))
+                                       (t                        'default))))
+    (when word
+      (sylvia:rhyme word rhyme-level (sylvia:--copy-rhyme-at-point-as-kill--deferred-generator word rhyme-level)))))
+
+(defun sylvia:--copy-rhyme-at-point-as-kill--deferred-generator (word rhyme-level)
+  "Deferred callback generator for `sylvia:copy-rhyme-at-point-as-kill'."
+  (lexical-let
+      ((captured-word              word)
+       (captured-rhyme-level rhyme-level))
+    #'(lambda (rhyming-words)
+      (sylvia:--loudly-try-push-kill-ring
+        (let ((ivy-sort-functions-alist nil)) ;; workaround ivy always sorting entries
+          (completing-read (format "[%s] Rhymes for %s: " (symbol-name captured-rhyme-level) captured-word)
+                           (my-presorted-completion-table rhyming-words)))))))
 
 (defun sylvia:copy-regex-query-result-as-kill ()
   "Interactively search for words using a phonetic regex.
 See documentation for `sylvia:regex' for full details."
   (interactive)
+  (if (use-region-p)
+      (sylvia:poem-phonemes-in-region
+        (1- (region-beginning))
+        (1- (region-end))
+        #'sylvia:--copy-regex-query-result-as-kill--deferred-get-input)
+    (sylvia:--copy-regex-query-result-as-kill--deferred-get-input '()))) ; <- technically not deferred unless using region
+
+(defun sylvia:--copy-regex-query-result-as-kill--deferred-get-input (initial-input-list)
+  "Deferred callback for `sylvia:copy-regex-query-result-as-kill'."
   (let*
-      ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
-       (initial       (if (use-region-p) (sylvia:--region-phonemes) ""))
-       (phoneme-regex (read-string "Enter Phoneme Regex: " (string-join initial " ")))
-       (result        (completing-read
-                        (format "Words matching pattern %s: " phoneme-regex)
-                        (my-presorted-completion-table (sylvia:regex phoneme-regex)))))
-    (sylvia:--loudly-try-push-kill-ring result)))
+      ((phoneme-regex (read-string "Enter Phoneme Regex: " (string-join initial-input-list " "))))
+    (sylvia:regex phoneme-regex (sylvia:--copy-regex-query-result-as-kill--deferred-generator--select-result phoneme-regex))))
+
+(defun sylvia:--copy-regex-query-result-as-kill--deferred-generator--select-result (phoneme-regex)
+  "Seconds deferred callback generator for `sylvia:copy-regex-query-result-as-kill'."
+  (lexical-let ((captured-phoneme-regex phoneme-regex))
+    #'(lambda (matching-words)
+      (sylvia:--loudly-try-push-kill-ring
+        (let ((ivy-sort-functions-alist nil)) ;; workaround ivy always sorting entries
+          (completing-read (format "Words matching pattern %s: " captured-phoneme-regex)
+                           (my-presorted-completion-table matching-words)))))))
 
 ;; TODO
 
@@ -317,11 +337,6 @@ NOTE: Works for built-in and helm, but ivy still sorts."
   "Write a message to the echo area, but keep it out of the messages buffer."
   (let ((message-log-max nil))
      (apply 'message args)))
-
-(defun sylvia:--region-phonemes ()
-  "Return a list of the phonemes covered by words in region. If a word has multiple possible pronunciations,
-choose the 'best' one. Returns a list of strings."
-  (sylvia:poem-phonemes-in-region (1- (region-beginning)) (1- (region-end))))
 
 (defun sylvia:--phoneme-vowel-p (phoneme)
   "Is this a vowel phoneme?"

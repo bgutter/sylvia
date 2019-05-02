@@ -162,6 +162,7 @@ If callback is given, the call is async."
 
 The basic framework for the major-mode.
 
+**** Hooks, Faces, Syntax, and Keymaps
 #+BEGIN_SRC emacs-lisp
 (defvar sylvia-mode-hook nil
   "Hooks to be run when sylvia-mode is invoked.")
@@ -190,7 +191,11 @@ The basic framework for the major-mode.
 (defface sylvia:consonant-face '((t :foreground "cornflower blue"))
   "Face used to decorate consonant."
   :group 'sylvia)
+#+END_SRC
 
+**** The Meat and Potatoes
+
+#+BEGIN_SRC emacs-lisp
 (defvar sylvia:idle-timer nil)
 (defvar sylvia:idle-delay 0.25)
 (make-variable-buffer-local 'sylvia:idle-timer)
@@ -352,16 +357,24 @@ Without prefix arg, use Sylvia's default rhyme-level.
 With C-u prefix, use Sylvia's 'loose' rhyme-level.
 With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
   (interactive "P")
-  (let*
-      ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
-       (word                     (thing-at-point 'word 'no-properties))
+  (let
+      ((word                     (thing-at-point 'word 'no-properties))
        (rhyme-level              (cond ((equal prefix-arg '(4))  'loose)
                                        ((equal prefix-arg '(16)) 'perfect)
-                                       (t                        'default)))
-       (rhyme                    (and word (completing-read
-                                   (format "[%s] Rhymes for %s: " (symbol-name rhyme-level) word)
-                                   (my-presorted-completion-table (sylvia:rhyme word rhyme-level))))))
-    (sylvia:--loudly-try-push-kill-ring rhyme)))
+                                       (t                        'default))))
+    (when word
+      (sylvia:rhyme word rhyme-level (sylvia:--copy-rhyme-at-point-as-kill--deferred-generator word rhyme-level)))))
+
+(defun sylvia:--copy-rhyme-at-point-as-kill--deferred-generator (word rhyme-level)
+  "Deferred callback generator for `sylvia:copy-rhyme-at-point-as-kill'."
+  (lexical-let
+      ((captured-word              word)
+       (captured-rhyme-level rhyme-level))
+    #'(lambda (rhyming-words)
+      (sylvia:--loudly-try-push-kill-ring
+        (let ((ivy-sort-functions-alist nil)) ;; workaround ivy always sorting entries
+          (completing-read (format "[%s] Rhymes for %s: " (symbol-name captured-rhyme-level) captured-word)
+                           (my-presorted-completion-table rhyming-words)))))))
 #+END_SRC
 
 *** Phonetic Regex Search
@@ -371,14 +384,27 @@ With C-u C-u prefix args, use Sylvia's 'perfect' rhyme-level."
   "Interactively search for words using a phonetic regex.
 See documentation for `sylvia:regex' for full details."
   (interactive)
+  (if (use-region-p)
+      (sylvia:poem-phonemes-in-region
+        (1- (region-beginning))
+        (1- (region-end))
+        #'sylvia:--copy-regex-query-result-as-kill--deferred-get-input)
+    (sylvia:--copy-regex-query-result-as-kill--deferred-get-input '()))) ; <- technically not deferred unless using region
+
+(defun sylvia:--copy-regex-query-result-as-kill--deferred-get-input (initial-input-list)
+  "Deferred callback for `sylvia:copy-regex-query-result-as-kill'."
   (let*
-      ((ivy-sort-functions-alist nil) ;; workaround ivy always sorting entries
-       (initial       (if (use-region-p) (sylvia:--region-phonemes) ""))
-       (phoneme-regex (read-string "Enter Phoneme Regex: " (string-join initial " ")))
-       (result        (completing-read
-                        (format "Words matching pattern %s: " phoneme-regex)
-                        (my-presorted-completion-table (sylvia:regex phoneme-regex)))))
-    (sylvia:--loudly-try-push-kill-ring result)))
+      ((phoneme-regex (read-string "Enter Phoneme Regex: " (string-join initial-input-list " "))))
+    (sylvia:regex phoneme-regex (sylvia:--copy-regex-query-result-as-kill--deferred-generator--select-result phoneme-regex))))
+
+(defun sylvia:--copy-regex-query-result-as-kill--deferred-generator--select-result (phoneme-regex)
+  "Seconds deferred callback generator for `sylvia:copy-regex-query-result-as-kill'."
+  (lexical-let ((captured-phoneme-regex phoneme-regex))
+    #'(lambda (matching-words)
+      (sylvia:--loudly-try-push-kill-ring
+        (let ((ivy-sort-functions-alist nil)) ;; workaround ivy always sorting entries
+          (completing-read (format "Words matching pattern %s: " captured-phoneme-regex)
+                           (my-presorted-completion-table matching-words)))))))
 #+END_SRC
 
 **** Interactive version WIP
@@ -447,15 +473,6 @@ NOTE: Works for built-in and helm, but ivy still sorts."
   "Write a message to the echo area, but keep it out of the messages buffer."
   (let ((message-log-max nil))
      (apply 'message args)))
-#+END_SRC
-
-**** Get phonemes in selected region
-
-#+BEGIN_SRC emacs-lisp
-(defun sylvia:--region-phonemes ()
-  "Return a list of the phonemes covered by words in region. If a word has multiple possible pronunciations,
-choose the 'best' one. Returns a list of strings."
-  (sylvia:poem-phonemes-in-region (1- (region-beginning)) (1- (region-end))))
 #+END_SRC
 
 **** General information about phonemes
