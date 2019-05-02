@@ -2,40 +2,41 @@
 
 [[./basic-usage.gif]]
 
-=sylvia-mode= for Emacs is an environment for composing lyrics and poetry. Powered by Sylvia, it provides contextual hints and various search tools to help you realize your artistic vision.
+=sylvia-mode= for Emacs is an environment for working with text with a focus on pronunciation and sound, such as when composing song lyrics or slam poetry. Powered by the Sylvia python package, it facilitates word-finding via phoneme patterns using an elaborate regular expression format. The major-mode also provides various contextual hints during editing.
 
-Implemented Features:
-- *Syllable counts* in window margin
-- Interactive selection of words which *rhyme with the word-at-point*
-- Interactive selection of words matching a *phoneme-regex*
-- Display *phonemes of word-at-point* in the echo area
-- Ability to infer the pronunciation of words which are not in the dictionary
-
-Planned Features:
-- Preload phoneme-regex query with phonemes for words-in-region
-- Find words which rhyme with words-in-region
-- Syntax-highlighting for regions in current stanza which syllabically correspond to word-at-point
-- Sub-word selection of phonemes via-region, using a char-to-phoneme alignment engine
+Feature Highlights:
+- *Phoneme Regex Queries*
+  - Free-form entry of Sylvia-format phonetic regular expressions.
+  - Matching words are offered to user, and selection is pushed onto the =kill-ring=.
+  - Optionally, field is prefilled with the phonemes for the word-at-point, or words-in-region.
+- *Rhyming Words*
+  - List words which rhyme with word-at-point, or words-in-region.
+  - Matching words are offered to user, and selection is pushed onto the =kill-ring=.
+- *Interactive Rhyming Regex Creation*
+  - Generates a phonetic regular expression from the word-at-point, or words-in-region, which would strictly match "rhyming" words.
+  - Support for different "rhyme-levels" of various strictness (loose, default, and perfect).
+  - The regular expression may be edited by the user before the query is executed.
+- *Phonemes at Point* displayed in Echo Area
+- *Syllable Counts* in window margin.
+- Infers the pronunciation of words which are not present in the CMU dictionary.
+- Sorts results for all functions by word popularity using Google's N-Gram dataset.
 
 * Installation
 
-Using =sylvia-mode= is easy -- just install the Python package and the Emacs package.
+To use =sylvia-mode=, you just need to install the =sylvia= Python package and the =sylvia= emacs package.
 
-** Emacs Package
+As described in the [[../README.org][Sylvia package README]]:
 
-TODO Insert MELPA tutorial
-
-#+BEGIN_SRC
-M-x package-install TODOTODOTODO
+#+BEGIN_SRC bash
+pip2 install sylvia
 #+END_SRC
 
-** Python Package
+Then download =sylvia.el= into your =~/.emacs.d/lisp/= folder, or somewhere in your =load-path=.
 
-TODO Link to [[../README.org][Sylvia package README]] for installation of the Python module.
+* Usage
 
-* Quickstart
-
-Place some stuff in your =.emacs=.
+** Installation
+Require the Sylvia package in your Emacs init file (after placing =sylvia.el= in your =load-path=);
 
 #+BEGIN_SRC emacs-lisp
 (require 'sylvia)
@@ -43,17 +44,49 @@ Place some stuff in your =.emacs=.
 
 Then, open a new buffer or text file and type =M-x sylvia-mode=.
 
-* Features
+** Keymap
 
-There's a keymap
+|---------+----------------------------------------+-------------------------------------------------|
+| Key     | Function                               | Description                                     |
+|---------+----------------------------------------+-------------------------------------------------|
+| C-c C-q | sylvia:copy-regex-query-result-as-kill | Freeform phonetic regex query.                  |
+| C-c C-r | sylvia:copy-rhyme-as-kill              | Query with editable pre-generated rhyming-regex |
+|---------+----------------------------------------+-------------------------------------------------|
 
-| Key     | Function                               | Description                                                                       |
-|---------+----------------------------------------+-----------------------------------------------------------------------------------|
-| C-c C-r | sylvia:copy-rhyme-at-point-as-kill     | List words which rhyme with the word at point. Copy collection to the kill-ring.  |
-| C-c C-q | sylvia:copy-regex-query-result-as-kill | List words which match the given phoneme-regex. Copy collection to the kill-ring. |
+** Exposed End-User Functions
+*** sylvia:copy-regex-query-result-as-kill
 
-** sylvia:copy-rhyme-at-point-as-kill
-TODO Describe the prefix args
+This command allows you to:
+- Enter a free-form phonetic regex query.
+- After hitting =<return>=, all known matching words will be listed via =completing-read=
+- The selected result is pushed onto the =kill-ring=.
 
-** sylvia:copy-regex-query-result-as-kill
-TODO blah
+Check the [[../README.org][Sylvia Python package README]] for more complete documentation on the phonetic regex format.
+
+*** sylvia:copy-rhyme-as-kill
+
+Without prefix argument, this command lists all rhyming words for the word-at-point, or words-in-region, using the "default" rhyme-level.
+
+With prefix argument, it will:
+- Prompt for a rhyme-level (loose, default, or perfect) via =completing-read=
+- Generate a phonetic regex which satisfies that rhyme-level using word-at-point, or words-in-region
+- Allow free-form editing of the regex, then finally, upon =<return>=...
+- List matching words of that regex via =completing-read=
+- The selected result is pushed onto the =kill-ring=.
+
+* Contributing
+
+=sylvia-mode= is developed in =sylvia.org=. Please make all changes there, and then tangle-them to =sylvia.el= via =org-babel-tangle-file=.
+
+* Notes
+
+This software is roughly early beta quality.
+
+Known Issues:
+- Syllable overlays are sometimes thrown into the wrong window?
+- Realtime query like counsel-ag, swyper, etc would be much, much, much nicer
+- Delta updates to the Sylvia server would be more efficient
+
+Feature Ideas:
+- Syntax-highlighting for regions in current stanza which syllabically correspond to word-at-point
+- Sub-word selection of phonemes via-region, using a char-to-phoneme alignment engine
