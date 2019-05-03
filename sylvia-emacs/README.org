@@ -85,19 +85,4 @@ With prefix argument, it will:
 
 This software is roughly early beta quality, and anyone interested in contributed is very welcome to do so!
 
-Known Issues:
-- Syllable overlays are sometimes thrown into the wrong window?
-- Realtime query like counsel-ag, swyper, etc would be much, much, much nicer
-- Delta updates to the Sylvia server would be more efficient
-- Non-ASCII characters in the buffer will break everything. Sylvia is going to be converted to Python3 to fix this.
-
-Feature Ideas:
-- Display phonemes in echo area as unicode IPA symbols (ɱ, ɮ, ɠ, etc), rather than CMU's ASCII friendly format.
-- Assonance, consonance, alliteration, etc as new rhyming strategies (alongside perfect and default -- loose is technically assonance already)
-- Sound classes analogous to [[https://www.regular-expressions.info/posixbrackets.html][posix regex character classes]], like =[:plosive:]=, =[:nasal:]=, =[:fricative:]=, etc. This, in particular, could give 'better' default rhymes.
-- Syntax-highlighting for regions in current stanza which syllabically correspond to word-at-point
-- Sub-word selection of phonemes via-region, using a char-to-phoneme alignment engine
-
-Ideas from [[https://www.reddit.com/r/emacs/comments/bk1hdz/sylviael_rhyming_engine_phonetic_regular/][Reddit]]:
-- When rhyming interactively, find a way to intelligently suggest previous/recent/corresponding words such that the user does not need to navigate manually to the word.
-- The lexical-lets are superfluous, as the *.el file is now using lexical binding file-wide.
+For a list of known issues feature ideas, and links to relevant research and documentation, [[./NOTES.org][check out the development notes!]]

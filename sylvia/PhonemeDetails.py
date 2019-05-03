@@ -69,7 +69,7 @@ PhonemeDetails( "V",  False, "v in victory",  PhonemeDetails.EUPHONIOUS   )
 PhonemeDetails( "W",  False, "w in what",     PhonemeDetails.EUPHONIOUS   )
 PhonemeDetails( "Y",  False, "y in year",     PhonemeDetails.EUPHONIOUS   )
 PhonemeDetails( "Z",  False, "z in zero",     PhonemeDetails.EUPHONIOUS   )
-PhonemeDetails( "ZH", False, "z in seizure",  PhonemeDetails.EUPHONIOUS    )
+PhonemeDetails( "ZH", False, "z in seizure",  PhonemeDetails.EUPHONIOUS   )
 
 def isVowelSound( phonemeString ):
     """

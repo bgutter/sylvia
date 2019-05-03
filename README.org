@@ -288,8 +288,7 @@ sylvia> popularity teutonic
 301907
 #+END_SRC
 
-* Other Information
+* Contributing and Other General Notes
 
-If curious, [[http://norvig.com/ngrams/][read up on Peter Norvig's word popularity data]], the data source used for Sylvia's default word popularities.
+For a list of known issues feature ideas, and links to relevant research and documentation, [[./NOTES.org][check out the development notes!]]
 
-To learn more about phonemes, check out the [[http://www.ipachart.com/][Interactive IPA Chart]].

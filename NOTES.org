@@ -1,0 +1,81 @@
+#+TITLE: Development Notes
+
+* Development Queue
+
+|-------------+------------------------------------------------------|
+| Tag         | Meaning                                              |
+|-------------+------------------------------------------------------|
+| BUG         | Either broken functionality, or deeply flawed design |
+| DEVOPS      | Book-keeping, testing, building, and distribution    |
+| FEATURE     | New features, or major changes to existing features  |
+| IMPROVEMENT | Improving existing features                          |
+|-------------+------------------------------------------------------|
+
+** Core Library
+*** [DEVOPS] Add unit tests
+
+*** [BUG] Convert to Python 3
+
+*** [FEATURE] Add new rhyme patterns: Assonance, Alliteration, Consonance, etc.
+Technically, the "loose" rhyme method is actually assonance
+
+*** [FEATURE] Sound classes analogous to [[https://www.regular-expressions.info/posixbrackets.html][posix regex character classes]]
+...like =[:plosive:]=, =[:nasal:]=, =[:fricative:]=, etc. This, in particular, could give 'better' default rhymes.
+
+*** [FEATURE] Sub-word alignment of characters to phonemes.
+Currently, we can map only whole words to phonemes sequences. This is because cmudict does not provide a more granular alignment. However, using the pronunciation inferencer, it may be possible.
+
+It's a little complicated though, as in a small number of cases, one is not possible, or is not intuitive. For example, mapping "cat" to =[ K AE T ]= is easy enough. It's one to one. Similarly, mapping "ping" to =[ P IH NG ]= is easy. The last two characters map to a single phoneme. But what about "vague"? This maps to the sequence =[ V EY G ]=. But, does the "ue" map to the =G= phoneme, or does it relate to the =EY= phoneme? Without the "ue", the "g" to =G= mapping would be unchanged, but the =EY= would become an =AE=. So, to do this halfway properly, we'd need to accept and handle the case where the some phonemes map to sequences of characters which /encapsulate/ other, unrelated, character sequences.
+
+*** [FEATURE] Syllabification
+We can already count syllables, because that's just counting vowel phonemes. However, we can't tell you which consonant is attached to which syllable. This probably depends on having working subword alignment. The idea here would be to be able to split words like "having" into "having" into =[ [ HH AE V ] [ IH NG ] ]=. The trouble is, who gets the =V=?
+
+*** [DEVOPS] Regression testing for PronunciationInferencer
+Need to come up with performance testing strategy and verify improvements/changes in each update. Ideas:
+- RMSE of Hamming distance between estimated phoneme sequence and truth (from cmudict)
+  - Or Levenshtein distance? Not sure that makes as much sense here though.
+  - Modify these distance functions such that they punish vowel/consonant mismatches more heavily. IE, guessing =IY= instead of =IH= is much better than if we'd guessed =V= or something.
+  - Modify them further such that they punish plosive/fricitive/nasal etc mismatches more heavily. IE, confusing =M= for =N= is better than if we'd guessed =P=.
+  - Weight the error of each words by it's popularity. IE mispronouncing "whale" is probably worse than mispronouncing "teutonic".
+    - Probably want to softmax the popularity.
+- Time required to estimate..performance matters
+
+*** [FEATURE] Pattern recognition?
+This may be useless, but recognition of existing patterns (assonance, rhyme, etc), or even things like syllable count patterns, in a given Poem. This could be used by an editor to detect variations in pattern and highlight them. A good use could be to help visualize the expected audible flow.
+
+** Emacs Interface
+
+*** [BUG] Syllable overlays can end up in wrong buffer
+Probably need to add =with-current-buffer=
+
+*** [BUG] Sometimes seeing a =numberp= deferred error for the value =nil=
+...but haven't caught it in a backtrace and can't reliably reproduce.
+
+*** [BUG] Non-ASCII characters break everything hard.
+Verify fixed after conversion to Python3.
+
+*** [FEATURE] Display phonemes in echo area as unicode IPA symbols (ɱ, ɮ, ɠ, etc)
+As opposed to CMU's ASCII friendly format.
+
+*** [IMPROVEMENT] Suggest recent words in interactive rhyming flow
+Mentioned on [[https://www.reddit.com/r/emacs/comments/bk1hdz/sylviael_rhyming_engine_phonetic_regular/][Reddit]]. When rhyming interactively, find a way to intelligently suggest previous/recent/corresponding words such that the user does not need to navigate manually to the word.
+
+*** [IMPROVEMENT] Remove lexical-lets
+Mentioned on [[https://www.reddit.com/r/emacs/comments/bk1hdz/sylviael_rhyming_engine_phonetic_regular/][Reddit]]. The lexical-lets are superfluous, as the *.el file is now using lexical binding file-wide.
+
+*** [FEATURE] Realtime query like counsel-ag, swyper, etc would be much, much, much nicer
+
+*** [IMPROVEMENT] Delta updates to the Sylvia server would be more efficient
+
+*** [FEATURE] Pattern Highlights
+If pattern recognition mentioned above is implemented, patterns applicable to the word at point could highlight related words in the current buffer.
+
+Even in the absence of that, we can do something like syllabic correspondence. We could highlight the word in the previous line which corresponds to the current syllable at point...but, that depends on having a syllable mapping, which is not yet started in the core library.
+
+* Useful References
+- [[http://research.cs.tamu.edu/prism/lectures/sp/l3.pdf][Slideshow on the Organization of Speech and Sounds for Texas A&M]]
+- [[http://www.ipachart.com/][Interactive website describing the IPA symbols and sounds]]
+- [[http://www.speech.cs.cmu.edu/cgi-bin/cmudict][Carnegie Mellon's documentation for CMUDict]]
+- [[https://en.wikipedia.org/wiki/ARPABET][Wikipedia page for the ARPABET, and conversions to IPA]]
+- [[http://norvig.com/ngrams/][Information about Peter Norvig's word popularity data]]
+
