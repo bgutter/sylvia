@@ -292,3 +292,4 @@ sylvia> popularity teutonic
 
 If curious, [[http://norvig.com/ngrams/][read up on Peter Norvig's word popularity data]], the data source used for Sylvia's default word popularities.
 
+To learn more about phonemes, check out the [[http://www.ipachart.com/][Interactive IPA Chart]].
