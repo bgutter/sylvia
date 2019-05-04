@@ -9,3 +9,4 @@ from PhoneticDictionary import *
 from Poem import *
 from SylviaConsole import *
 from SylviaEpcServer import *
+from SylviaApiWrapper import *

@@ -19,7 +19,7 @@ def loadDefaultPhoneticDictionary():
     """
     Load the encoded dictionary distributed with Sylvia.
     """
-    return PhoneticDictionary( binFile=pkg_resources.resource_stream( "sylvia", "cmudict.sylviabin" ) )
+    return PhoneticDictionary( binFile=pkg_resources.resource_stream( "sylvia", "data/cmudict.sylviabin" ) )
 
 def dictListAdd( d, k, v ):
     """
