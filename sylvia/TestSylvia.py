@@ -22,9 +22,15 @@ class TestSylvia( unittest.TestCase ):
             self.assertIsInstance( phoneme, basestring )
 
     def setUp( self ):
+        """
+        Create the Sylvia object.
+        """
         self.sylvia = Sylvia()
 
-    def test_getPronunciation( self ):
+    def test_getPronunciationKnown( self ):
+        """
+        Test Sylvia.getPronunciation() for words in the dictionary.
+        """
         known_words = {
             "cats":                               [ [ "K", "AE", "T", "S" ] ],
             "dogs":                               [ [ "D", "AA", "G", "Z", ], [ "D", "AO", "G", "Z", ] ],
@@ -44,10 +50,42 @@ class TestSylvia( unittest.TestCase ):
             #
             # Test findAll case
             #
-            #retd = self.sylvia.getPronunciation( word, findAll=True )
-            #self.assertIsInstance( retd, tuple )
-            #self.assertTrue( len( retd ) == 2 )
-            #self.
+            retd = self.sylvia.getPronunciation( word, findAll=True )
+            self.assertIsInstance( retd, tuple )
+            self.assertTrue( len( retd ) == 2 )
+            lookups, pronounced = retd
+            self.verifyPronunciation( pronounced )
+            self.assertIsInstance( lookups, list )
+            self.assertEqual( len( lookups ), len( expectedValues ) )
+            for p in lookups:
+                self.verifyPronunciation( p )
+                self.assertIn( p, expectedValues )
+
+    def test_getPronunciationUnknown( self ):
+        """
+        Test Sylvia.getPronunciation() for words not in the dictionary.
+        """
+        unknown_words = [ "rafloy", "she'sd", "fihlbart" ]
+
+        for word in unknown_words:
+            #
+            # Test simple case
+            #
+            simplePronunciation = self.sylvia.getPronunciation( word )
+            self.verifyPronunciation( simplePronunciation )
+
+            #
+            # Test findAll case
+            #
+            retd = self.sylvia.getPronunciation( word, findAll=True )
+            self.assertIsInstance( retd, tuple )
+            self.assertTrue( len( retd ) == 2 )
+            lookups, pronounced = retd
+            self.verifyPronunciation( pronounced )
+            self.assertIsInstance( lookups, list )
+            self.assertEqual( len( lookups ), 0 )
+            for p in lookups:
+                self.verifyPronunciation( p )
 
 if __name__ == '__main__':
     unittest.main()
