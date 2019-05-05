@@ -87,5 +87,29 @@ class TestSylvia( unittest.TestCase ):
             for p in lookups:
                 self.verifyPronunciation( p )
 
+    def test_getPhoneticRegex_word( self ):
+        """
+        Test Sylvia.getPhoneticRegex() with words as input
+        """
+        words = [ "cat", "Saturday", "she'sd" ]
+
+        for word in words:
+            for pattern in self.sylvia.phoneticPatterns:
+                regex = self.sylvia.generatePhoneticRegex( word, pattern )
+                self.assertIsInstance( regex, list )
+                # TODO check contents once we have linting
+
+    def test_getPhoneticRegex_pronunciation( self ):
+        """
+        Test Sylvia.getPhoneticRegex() with pronunciations as input
+        """
+        words = [ [ "K", "AE", "T" ], [ "SH", "EH", "S", "D" ] ]
+
+        for word in words:
+            for pattern in self.sylvia.phoneticPatterns:
+                regex = self.sylvia.generatePhoneticRegex( word, pattern )
+                self.assertIsInstance( regex, basestring )
+                # TODO check contents once we have linting
+
 if __name__ == '__main__':
     unittest.main()
