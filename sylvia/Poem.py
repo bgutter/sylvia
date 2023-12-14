@@ -6,31 +6,33 @@
 
 import re
 
-from PhonemeDetails import *
-from LetterDetails import *
+from .PhonemeDetails import *
+from .LetterDetails import *
 
-WORD_SPLIT_RE = re.compile( "([^a-zA-Z'])" )
-WORD_RE       = re.compile( "[a-zA-Z']+" )
-NEWLINE_RE    = re.compile( "\n" )
+WORD_SPLIT_RE = re.compile("([^a-zA-Z'])")
+WORD_RE = re.compile("[a-zA-Z']+")
+NEWLINE_RE = re.compile("\n")
 
-def lookupOrInfer( pd, pi, word ):
+
+def lookupOrInfer(pd, pi, word):
     """
     Lookup a word, take the first pronunciation. If not known,
     infer a pronunciation and return that.
     """
-    pronunciations = pd.findPronunciations( word )
-    if len( pronunciations ) <= 0:
-        pronunciation = pi.pronounce( word )
+    pronunciations = pd.findPronunciations(word)
+    if len(pronunciations) <= 0:
+        pronunciation = pi.pronounce(word)
     else:
-        pronunciation = pronunciations[ 0 ]
+        pronunciation = pronunciations[0]
     return pronunciation
 
-class Poem( object ):
+
+class Poem(object):
     """
     Wraps and analyzes plain text.
     """
 
-    def __init__( self, dictionary, inferencer, sourceText ):
+    def __init__(self, dictionary, inferencer, sourceText):
         """
         Create a new Poem from a string.
         """
@@ -39,13 +41,13 @@ class Poem( object ):
         self.pi = inferencer
         self.__updateAtlas()
 
-    def getText( self ):
+    def getText(self):
         """
         Return the plain text.
         """
         return self.sourceText
 
-    def setText( self, text ):
+    def setText(self, text):
         """
         Set the poem text.
         """
@@ -55,58 +57,60 @@ class Poem( object ):
         self.sourceText = text
         self.__updateAtlas()
 
-    def phonaestheticMap( self ):
+    def phonaestheticMap(self):
         """
         EXPERIMENTAL
         Prints X for cacophonious sounds, ~ for euphonous sounds, and all
         other whitespace or symbols are retained in-place.
         """
         tokensOut = []
-        for token in WORD_SPLIT_RE.split( self.sourceText ):
-            pronunciations = self.pd.findPronunciations( token )
-            if len( pronunciations ) > 0:
+        for token in WORD_SPLIT_RE.split(self.sourceText):
+            pronunciations = self.pd.findPronunciations(token)
+            if len(pronunciations) > 0:
                 # TODO: Using first for now
                 pronunciation = pronunciations[0]
                 for phoneme in pronunciation:
-                    if PHONEME_DETAILS__by_text[ phoneme ].isEuphonious():
-                        tokensOut.append( "~" )
+                    if PHONEME_DETAILS__by_text[phoneme].isEuphonious():
+                        tokensOut.append("~")
                     else:
-                        tokensOut.append( "X" )
+                        tokensOut.append("X")
             else:
-                tokensOut.append( token )
-        return "".join( tokensOut )
+                tokensOut.append(token)
+        return "".join(tokensOut)
 
-    def syllableCounts( self ):
+    def syllableCounts(self):
         """
         Get the number of syllables on each line.
         """
         counts = []
-        line_endings = [ m.start() for m in re.finditer( NEWLINE_RE, self.sourceText ) ] + [ len( self.sourceText ) ]
+        line_endings = [m.start() for m in re.finditer(NEWLINE_RE, self.sourceText)] + [
+            len(self.sourceText)
+        ]
         last_idx = 0
         for nl_idx in line_endings:
             if nl_idx - last_idx == 0:
-                counts.append( 0 )
+                counts.append(0)
             else:
-                phonemes = self.phonemesInRegion( last_idx, nl_idx )
-                counts.append( len( [ x for x in phonemes if isVowelSound( x ) ] ) )
+                phonemes = self.phonemesInRegion(last_idx, nl_idx)
+                counts.append(len([x for x in phonemes if isVowelSound(x)]))
             last_idx = nl_idx
         return counts
 
-    def phonemesInRegion( self, begin, end ):
+    def phonemesInRegion(self, begin, end):
         """
         Get the phonemes associated with the text from character
         index begin to end.
         """
-        assert( begin >= 0 and begin <= len( self.sourceText ) )
-        assert( end >= 0 and end <= len( self.sourceText ) )
-        assert( begin <= end )
+        assert begin >= 0 and begin <= len(self.sourceText)
+        assert end >= 0 and end <= len(self.sourceText)
+        assert begin <= end
         if end > begin:
-            pbegin = self.__charToPhonemeIndexMap[ begin ][0]
-            pend   = self.__charToPhonemeIndexMap[ max( begin, end - 1 ) ][1]
-            return self.__phonemes[ pbegin : pend ]
+            pbegin = self.__charToPhonemeIndexMap[begin][0]
+            pend = self.__charToPhonemeIndexMap[max(begin, end - 1)][1]
+            return self.__phonemes[pbegin:pend]
         return []
 
-    def __updateAtlas( self ):
+    def __updateAtlas(self):
         """
         Called whenever the buffer is modified.
         Updates the phoneme <-> char mappings.
@@ -157,25 +161,29 @@ class Poem( object ):
         # You get the idea, right?
 
         # Create the basic mapping objects
-        self.__charToPhonemeIndexMap = [ None ] * len( self.sourceText )
+        self.__charToPhonemeIndexMap = [None] * len(self.sourceText)
         self.__phonemes = []
 
         # For each word we find, get the phonemes and append them to the list.
         # Set the map index for each of those word characters
-        for match in re.finditer( WORD_RE, self.sourceText ):
-            print "Found word \"{}\" from {} to {}.".format( match.group(), match.start(), match.end() )
-            phonemesForWord = lookupOrInfer( self.pd, self.pi, match.group() )
-            phonemeStart = len( self.__phonemes )
-            self.__phonemes.extend( phonemesForWord )
-            phonemeStop = len( self.__phonemes )
-            for i in range( match.start(), match.end() ):
-                self.__charToPhonemeIndexMap[ i ] = ( phonemeStart, phonemeStop )
+        for match in re.finditer(WORD_RE, self.sourceText):
+            print(
+                'Found word "{}" from {} to {}.'.format(
+                    match.group(), match.start(), match.end()
+                )
+            )
+            phonemesForWord = lookupOrInfer(self.pd, self.pi, match.group())
+            phonemeStart = len(self.__phonemes)
+            self.__phonemes.extend(phonemesForWord)
+            phonemeStop = len(self.__phonemes)
+            for i in range(match.start(), match.end()):
+                self.__charToPhonemeIndexMap[i] = (phonemeStart, phonemeStop)
 
         # Now we need to get rid of the remaining Nones (corresponding to non-word chars)
         # by assigning each to a phoneme gap. We do this by back-filling values.
-        backfillVal = len( self.__phonemes )
-        for i in range( len( self.__charToPhonemeIndexMap ) - 1, -1, -1 ):
-            if self.__charToPhonemeIndexMap[ i ] is None:
-                self.__charToPhonemeIndexMap[ i ] = ( backfillVal, backfillVal )
+        backfillVal = len(self.__phonemes)
+        for i in range(len(self.__charToPhonemeIndexMap) - 1, -1, -1):
+            if self.__charToPhonemeIndexMap[i] is None:
+                self.__charToPhonemeIndexMap[i] = (backfillVal, backfillVal)
             else:
-                backfillVal = self.__charToPhonemeIndexMap[ i ][ 0 ]
+                backfillVal = self.__charToPhonemeIndexMap[i][0]
