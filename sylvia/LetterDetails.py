@@ -24,4 +24,6 @@ def sanitizeWord(word):
     needStrip = DUPLICATE_STRIPPING_REGEX.match(word)
     if needStrip:
         word = needStrip.group(1)
+    # 20231213 TODO sometimes this wants to be a byte
+    # e.g. want to add .encode() to end
     return word.capitalize()

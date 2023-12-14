@@ -63,7 +63,8 @@ def decodePronunciation(pronunciationBuffer):
     """
     Return the decoded list corresponding to this encoded buffer.
     """
-    return [decodePhonemeByte(x) for x in pronunciationBuffer]
+    # 20231213/TODONE: lookup with chr(x)
+    return [decodePhonemeByte(chr(x)) for x in pronunciationBuffer]
 
 
 def preprocessPhoneticRegex(regexTextUnpreprocessed):
@@ -145,7 +146,7 @@ class PhoneticDictionary(object):
         self.entries = {}
         self.popularities = {}
         buf = fin.read()
-        lines = buf.split(b'\n')
+        lines = buf.split(b"\n")
         for line in lines:
             if len(line) == 0:
                 continue
@@ -211,7 +212,13 @@ class PhoneticDictionary(object):
             return self.sortWordsByPopularity(list(result))
 
         matchingWords = []
-        regex = re.compile(preprocessPhoneticRegex(regexTextUnpreprocessed) + "$")
+
+        regex_str = preprocessPhoneticRegex(regexTextUnpreprocessed) + "$"
+        # TODO: broke here?!
+        # python -m sylvia -c "regex G #* AE #* IH #* %"
+        # is empty
+        regex = re.compile(regex_str.encode())
+        print(f"from '{regexTextUnpreprocessed}' => '{regex_str}', regexp = '{regex}'")
         for word, encodedPronunciations in self.entries.items():
             for encodedPronunciation in encodedPronunciations:
                 if regex.match(encodedPronunciation):
@@ -238,14 +245,15 @@ class PhoneticDictionary(object):
         Return a list of pronunciations for word in dictionary
         """
         return [
-            decodePronunciation(p) for p in self.entries.get(sanitizeWord(word), [])
+            decodePronunciation(p)
+            for p in self.entries.get(sanitizeWord(word).encode(), [])
         ]
 
     def findPopularity(self, word):
         """
         Spit out the popularity for given word.
         """
-        return self.popularities.get(sanitizeWord(word), -1)
+        return self.popularities.get(sanitizeWord(word).encode(), -1)
 
     def getRhymeRegex(self, pronunciationOrWord, level="default"):
         """

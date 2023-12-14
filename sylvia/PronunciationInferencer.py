@@ -336,10 +336,13 @@ class PronunciationInferencer(object):
         #
         for leadingVowel, vowelSound in silentELeadingVowels.items():
             for linkingConsonant, consonantSound in singleLetterDefaults.items():
+                # TODONE/20231213 confirm all are str
+                # print(f"vowel '{type(leadingVowel)}' '{type(vowelSound)}'; linking: '{type(linkingConsonant)}' '{type(consonantSound)}'")
                 if linkingConsonant in VOWEL_LETTERS:
                     continue
                 if linkingConsonant in list(silentELinkingNonDefaultConsonants.keys()):
                     continue
+                # TODONE: character is correct (vs. b"x")
                 if linkingConsonant == "x":
                     continue
                 self.addRule(

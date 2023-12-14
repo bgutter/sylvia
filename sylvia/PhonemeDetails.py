@@ -91,7 +91,10 @@ def sanitizePhonemeString(phonemeString):
     """
     Strip emphasis and normalize.
     """
-    return phonemeString.translate(None, string.digits).upper()
+    rm_digits = str.maketrans("", "", string.digits)
+    no_digits = phonemeString.translate(rm_digits).upper()
+    # TODONE: mktrans+translate py3 change removes digits as expected
+    return no_digits
 
 
 ANY_VOWEL_SOUND_REGEX_TEXT = (

@@ -292,3 +292,13 @@ sylvia> popularity teutonic
 
 For a list of known issues feature ideas, and links to relevant research and documentation, [[./NOTES.org][check out the development notes!]]
 
+
+
+** Debugging
+
+
+#+BEGIN_SRC
+python -m trace -T --count -C coverreport/ --module sylvia -- -c "lookup capture"
+
+ipdb -m sylvia  -c "lookup capture"
+#+END_SRC
