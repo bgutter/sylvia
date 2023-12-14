@@ -5,16 +5,17 @@
 # server and console interface.
 #
 
-from PhoneticDictionary import *
-from PronunciationInferencer import *
-from Poem import *
+from .PhoneticDictionary import *
+from .PronunciationInferencer import *
+from .Poem import *
 
-class Sylvia( object ):
+
+class Sylvia(object):
     """
     Combined API wrapper for Sylvia.
     """
 
-    def __init__( self, phoneticDictionary=None, pronunciationInferencer=None ):
+    def __init__(self, phoneticDictionary=None, pronunciationInferencer=None):
         """
         Construct a new Sylvia instance.
 
@@ -29,7 +30,7 @@ class Sylvia( object ):
         if self.pi is None:
             self.pi = PronunciationInferencer()
 
-    def getPronunciation( self, word, findAll=False ):
+    def getPronunciation(self, word, findAll=False):
         """
         Return the pronunciation, or pronunciations, for a word.
 
@@ -43,22 +44,22 @@ class Sylvia( object ):
         Returns:
             See documentation on findAll argument.
         """
-        dictEntries = self.pd.findPronunciations( word )
-        if findAll or len( dictEntries ) <= 0:
-            inferred = self.pi.pronounce( word )
+        dictEntries = self.pd.findPronunciations(word)
+        if findAll or len(dictEntries) <= 0:
+            inferred = self.pi.pronounce(word)
         if findAll:
-            return ( dictEntries, inferred )
+            return (dictEntries, inferred)
         else:
-            return dictEntries[ 0 ] if len( dictEntries ) >= 1 else inferred
+            return dictEntries[0] if len(dictEntries) >= 1 else inferred
 
     @property
-    def phoneticPatterns( self ):
+    def phoneticPatterns(self):
         """
         List all supported phonetic patterns.
         """
         return self.pd.getRhymeLevels()
 
-    def generatePhoneticRegex( self, pronunciationOrWord, phoneticPattern ):
+    def generatePhoneticRegex(self, pronunciationOrWord, phoneticPattern):
         """
         Generate a specialized phonetic regular expression.
 
@@ -70,8 +71,8 @@ class Sylvia( object ):
             If given a pronunciation, a string representing a phonetic regex. If given
             a word, then a list of regexes -- one per possible pronunciation.
         """
-        assert( phoneticPattern in self.phoneticPatterns )
-        ret = self.pd.getRhymeRegex( pronunciationOrWord, phoneticPattern )
-        if isinstance( pronunciationOrWord, list ):
+        assert phoneticPattern in self.phoneticPatterns
+        ret = self.pd.getRhymeRegex(pronunciationOrWord, phoneticPattern)
+        if isinstance(pronunciationOrWord, list):
             ret = ret[0]
         return ret
