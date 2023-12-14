@@ -145,11 +145,11 @@ class PhoneticDictionary(object):
         self.entries = {}
         self.popularities = {}
         buf = fin.read()
-        lines = buf.split("\n")
+        lines = buf.split(b'\n')
         for line in lines:
             if len(line) == 0:
                 continue
-            word, popularity, pronunciation = line.split(" ")
+            word, popularity, pronunciation = line.split(b" ")
             self.popularities[word] = int(popularity)
             dictListAdd(self.entries, word, pronunciation)
 
